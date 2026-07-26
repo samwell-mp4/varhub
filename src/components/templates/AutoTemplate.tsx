@@ -85,14 +85,15 @@ export function AutoTemplate({ media, templateId, title, subtitle, category, log
     media: media[index] ?? null,
   }))
 
-  const handleMouseDown = useCallback((e: React.MouseEvent, mediaId: string) => {
+  const handlePointerDown = useCallback((e: React.PointerEvent, mediaId: string) => {
     setSelectedMedia(mediaId)
     dragging.current = true
     dragStart.current = { x: e.clientX, y: e.clientY }
     setDragOffset({ x: 0, y: 0 })
+    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
   }, [setSelectedMedia])
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
     if (!dragging.current || !selectedMediaId) return
     const dx = (e.clientX - dragStart.current.x) * PAN_SPEED
     const dy = (e.clientY - dragStart.current.y) * PAN_SPEED
@@ -106,7 +107,7 @@ export function AutoTemplate({ media, templateId, title, subtitle, category, log
     setDragOffset({ x: clampedX, y: clampedY })
   }, [selectedMediaId])
 
-  const handleMouseUp = useCallback(() => {
+  const handlePointerUp = useCallback(() => {
     if (!dragging.current || !selectedMediaId) return
     dragging.current = false
     if (dragOffset.x !== 0 || dragOffset.y !== 0) {
@@ -158,22 +159,23 @@ export function AutoTemplate({ media, templateId, title, subtitle, category, log
 
   return (
     <div
-      className="w-full h-full flex flex-col select-none"
+      className="w-full h-full flex flex-col select-none touch-none"
       style={{ backgroundColor: bgColor || '#000' }}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      onPointerLeave={handlePointerUp}
     >
       <div className="px-4 pt-3 pb-3 bg-gradient-to-b from-black/85 via-black/40 to-transparent">
         <div className="flex items-start gap-3">
           <div className="shrink-0 mt-0.5">
             {logo ? (
-              <div className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-white/20">
+              <div className="w-12 h-12 rounded-full overflow-hidden ring-2 ring-white/20">
                 <img src={logo} alt="logo" className="w-full h-full object-cover" />
               </div>
             ) : (
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center ring-2 ring-white/10">
-                <span className="text-white text-xs font-bold">S</span>
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center ring-2 ring-white/10">
+                <span className="text-white text-sm font-bold">S</span>
               </div>
             )}
           </div>
@@ -208,7 +210,7 @@ export function AutoTemplate({ media, templateId, title, subtitle, category, log
               width: `${slot.width}%`,
               height: `${slot.height}%`,
             }}
-            onMouseDown={(e) => slot.media && handleMouseDown(e, slot.media.id)}
+            onPointerDown={(e) => slot.media && handlePointerDown(e, slot.media.id)}
           >
             {slot.media ? (
               slot.media.type === 'video' ? (

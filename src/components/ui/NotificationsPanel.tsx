@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { InstagramPost, ACCOUNTS } from '@/types'
+import { useUIStore } from '@/store'
 import { Bell, BellDot, RefreshCw, ExternalLink, Clock, Heart, MessageCircle, Loader2, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -45,16 +46,20 @@ export function NotificationsPanel() {
     el.scrollBy({ left: amount, behavior: 'smooth' })
   }
 
+  function parseTimeAgo(t: string): number {
+    const m = t.match(/(\d+)\s*(min|h|d|sem|w)/i)
+    if (!m) return 0
+    const n = parseInt(m[1])
+    const unit = m[2].toLowerCase()
+    if (unit === 'min') return n * 60
+    if (unit === 'h') return n * 3600
+    if (unit === 'd') return n * 86400
+    if (unit === 'sem' || unit === 'w') return n * 604800
+    return 0
+  }
+
   function sortByTime(a: InstagramPost, b: InstagramPost): number {
-    const parseTime = (t: string): number => {
-      const n = parseFloat(t)
-      if (t.includes('min')) return n * 60
-      if (t.includes('h')) return n * 3600
-      if (t.includes('d')) return n * 86400
-      if (t.includes('sem') || t.includes('w')) return n * 604800
-      return 0
-    }
-    return parseTime(b.time) - parseTime(a.time)
+    return parseTimeAgo(a.time) - parseTimeAgo(b.time)
   }
 
   const allPosts = Object.values(accountData).flatMap((d) => d.posts).sort(sortByTime)
@@ -121,9 +126,10 @@ export function NotificationsPanel() {
   }, [accountData, updateScrollButtons])
 
   const dismissNew = () => setNewIds(new Set())
+  const isMobile = useUIStore((s) => s.isMobile)
 
   return (
-    <div className="w-80 bg-[#0d0d14] border-l border-[#1a1a28] flex flex-col shrink-0 overflow-hidden">
+    <div className={`bg-[#0d0d14] flex flex-col shrink-0 overflow-hidden ${isMobile ? 'w-full flex-1' : 'w-80 border-l border-[#1a1a28]'}`}>
       <div className="p-4 border-b border-[#1a1a28] shrink-0">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">

@@ -1,6 +1,5 @@
 'use client'
-
-import { useProjectStore } from '@/store'
+import { useProjectStore, useUIStore } from '@/store'
 import { useRef } from 'react'
 import { DropZone } from './DropZone'
 import { MediaList } from '../preview/MediaList'
@@ -8,18 +7,20 @@ import { Image, X } from 'lucide-react'
 
 export function EditorPanel() {
   const { project, setTitle, setSubtitle, setTitleSize, setSubtitleSize, setTitleBold, setSubtitleBold, setBgColor, setTitleColor, setSubtitleColor, setCategory, setLogo } = useProjectStore()
+  const isMobile = useUIStore((s) => s.isMobile)
   const logoInputRef = useRef<HTMLInputElement>(null)
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+
     const reader = new FileReader()
     reader.onload = () => setLogo(reader.result as string)
     reader.readAsDataURL(file)
   }
 
   return (
-    <div className="w-80 bg-[#0d0d14] border-l border-[#1a1a28] flex flex-col shrink-0 overflow-y-auto">
+    <div className={`bg-[#0d0d14] flex flex-col shrink-0 overflow-y-auto ${isMobile ? 'w-full flex-1' : 'w-80 border-l border-[#1a1a28]'}`}>
       <div className="p-4 space-y-5">
         <div className="space-y-3">
           <p className="text-xs text-zinc-600 font-medium uppercase tracking-wider">
@@ -38,7 +39,7 @@ export function EditorPanel() {
                 />
                 <button
                   onClick={() => logoInputRef.current?.click()}
-                  className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center overflow-hidden ring-2 ring-white/20 hover:ring-violet-400/50 transition-all"
+                  className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center overflow-hidden ring-2 ring-white/20 hover:ring-violet-400/50 transition-all"
                 >
                   {project.logo ? (
                     <img src={project.logo} alt="logo" className="w-full h-full object-cover" />

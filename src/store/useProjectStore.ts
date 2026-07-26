@@ -36,11 +36,12 @@ const MAX_UNDO = 50
 
 const createEmptyProject = (): Project => ({
   id: generateId(),
-  title: '',
+  title: '@CHAMAOVAR',
   subtitle: '',
   category: 'Notícia',
   media: [],
   templateId: 5,
+  logo: '/logotipovar.jpg',
 })
 
 function clampPan(panX: number, panY: number, scale: number): { panX: number; panY: number } {

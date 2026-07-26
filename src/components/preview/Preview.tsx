@@ -1,11 +1,12 @@
 'use client'
 
-import { useProjectStore } from '@/store'
+import { useProjectStore, useUIStore } from '@/store'
 import { AutoTemplate } from '@/components/templates/AutoTemplate'
 import { motion } from 'framer-motion'
 
 export function Preview() {
   const { project } = useProjectStore()
+  const isMobile = useUIStore((s) => s.isMobile)
 
   return (
     <div className="flex-1 flex items-center justify-center p-4">
@@ -14,8 +15,7 @@ export function Preview() {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3 }}
-        className="relative w-full max-w-[420px] aspect-[4/5] rounded-2xl overflow-hidden shadow-2xl bg-black"
-      >
+        className={`relative w-full rounded-2xl overflow-hidden shadow-2xl bg-black ${isMobile ? 'max-w-[320px] aspect-[4/5]' : 'max-w-[420px] aspect-[4/5]'}`}>
         <AutoTemplate
           media={project.media}
           templateId={project.templateId}

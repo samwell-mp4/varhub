@@ -1,10 +1,12 @@
 'use client'
 
 import { Settings } from 'lucide-react'
+import { useUIStore } from '@/store'
 
 export function SettingsPanel() {
+  const isMobile = useUIStore((s) => s.isMobile)
   return (
-    <div className="w-72 bg-[#0d0d14] border-l border-[#1a1a28] flex flex-col shrink-0 overflow-y-auto">
+    <div className={`bg-[#0d0d14] flex flex-col shrink-0 overflow-y-auto ${isMobile ? 'w-full flex-1' : 'w-72 border-l border-[#1a1a28]'}`}>
       <div className="p-4 space-y-4">
         <p className="text-xs text-zinc-600 font-medium uppercase tracking-wider">
           Configurações

@@ -1,6 +1,6 @@
 'use client'
 
-import { useProjectStore } from '@/store'
+import { useProjectStore, useUIStore } from '@/store'
 import { TEMPLATES } from '@/lib/autoLayout'
 import { Check, Monitor } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -27,9 +27,10 @@ function MiniPreview({ slots }: { slots: { x: number; y: number; width: number; 
 
 export function TemplatesPanel() {
   const { project, setTemplateId } = useProjectStore()
+  const isMobile = useUIStore((s) => s.isMobile)
 
   return (
-    <div className="w-72 bg-[#0d0d14] border-l border-[#1a1a28] flex flex-col shrink-0 overflow-y-auto">
+    <div className={`bg-[#0d0d14] flex flex-col shrink-0 overflow-y-auto ${isMobile ? 'w-full flex-1' : 'w-72 border-l border-[#1a1a28]'}`}>
       <div className="p-4 space-y-3">
         <div className="flex items-center gap-2">
           <Monitor size={14} className="text-zinc-500" />

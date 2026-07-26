@@ -49,13 +49,14 @@ export function CropModal({ media, slotAspect, onClose }: CropModalProps) {
     return () => ro.disconnect()
   }, [])
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handlePointerDown = (e: React.PointerEvent) => {
     setDragging(true)
     dragRef.current = { startX: e.clientX, startY: e.clientY, panX: localPan.x, panY: localPan.y }
+    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
     e.preventDefault()
   }
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handlePointerMove = (e: React.PointerEvent) => {
     if (!dragging) return
     const dx = (e.clientX - dragRef.current.startX) * 0.5
     const dy = (e.clientY - dragRef.current.startY) * 0.5
@@ -66,7 +67,7 @@ export function CropModal({ media, slotAspect, onClose }: CropModalProps) {
     updateMediaPan(media.id, newX, newY)
   }
 
-  const handleMouseUp = () => {
+  const handlePointerUp = () => {
     if (!dragging) return
     setDragging(false)
     updateMediaPan(media.id, localPan.x, localPan.y)
@@ -113,11 +114,12 @@ export function CropModal({ media, slotAspect, onClose }: CropModalProps) {
 
           <div
             ref={containerRef}
-            className="flex-1 relative min-h-[350px] overflow-hidden bg-black"
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
+            className="flex-1 relative min-h-[250px] sm:min-h-[350px] overflow-hidden bg-black touch-none"
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+            onPointerLeave={handlePointerUp}
             style={{ cursor: dragging ? 'grabbing' : imgLoaded ? 'grab' : 'default' }}
           >
             {imgLoaded && (
