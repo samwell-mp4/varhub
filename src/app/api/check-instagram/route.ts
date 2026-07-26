@@ -6,7 +6,22 @@ export const dynamic = 'force-dynamic'
 const FALLBACK_ACCOUNTS: Record<string, { posts: InstagramPost[] }> = {
   choquei: {
     posts: [
-      { id: 'fallback1', shortcode: 'fallback1', caption: '🔔 Nenhuma notificação disponível no momento.\n\nTente novamente mais tarde.', likes: '—', comments: '—', time: '—', thumbnail: '' },
+      { id: 'fb_c1', shortcode: 'fb_c1', caption: '🔔 As notificações do Instagram estão temporariamente indisponíveis no servidor.\n\nTente novamente mais tarde.', likes: '—', comments: '—', time: '—', thumbnail: '' },
+    ],
+  },
+  hugogloss: {
+    posts: [
+      { id: 'fb_h1', shortcode: 'fb_h1', caption: '📢 Serviço de notificações offline.\n\nSuas notificações voltarão a funcionar assim que o servidor conseguir acessar a fonte de dados.', likes: '—', comments: '—', time: '—', thumbnail: '' },
+    ],
+  },
+  letsgossip: {
+    posts: [
+      { id: 'fb_l1', shortcode: 'fb_l1', caption: '⚙️ Estamos resolvendo a conectividade com o Instagram.\n\nEnquanto isso, você pode continuar criando suas artes normalmente.', likes: '—', comments: '—', time: '—', thumbnail: '' },
+    ],
+  },
+  oamarelinhoof: {
+    posts: [
+      { id: 'fb_o1', shortcode: 'fb_o1', caption: '📡 Notificações temporariamente desativadas.\n\nVerifique se o servidor tem acesso à internet.', likes: '—', comments: '—', time: '—', thumbnail: '' },
     ],
   },
 }
@@ -38,12 +53,13 @@ async function fetchWithRetry(url: string, retries = 2): Promise<string | null> 
   return null
 }
 
-async function scrapeAccount(account: string): Promise<InstagramPost[] | null> {
-  const html = await fetchWithRetry('https://imginn.com/' + account + '/?_=' + Date.now())
-  if (!html) return null
+const SOURCES = [
+  (a: string) => 'https://imginn.com/' + a + '/?_=' + Date.now(),
+  (a: string) => 'https://imginn.com/' + a + '/',
+]
 
+function parseImginn(html: string): InstagramPost[] | null {
   const posts: InstagramPost[] = []
-
   const rawItems = html.split('<div class="item">')
   rawItems.shift()
 
@@ -76,6 +92,18 @@ async function scrapeAccount(account: string): Promise<InstagramPost[] | null> {
   }
 
   return posts.length > 0 ? posts.slice(0, 30) : null
+}
+
+async function scrapeAccount(account: string): Promise<InstagramPost[] | null> {
+  for (const source of SOURCES) {
+    const url = source(account)
+    const html = await fetchWithRetry(url)
+    if (!html) continue
+    const parsed = parseImginn(html)
+    if (parsed) return parsed
+    console.error(`[check-instagram] ${url}: parsed 0 posts (length=${html.length})`)
+  }
+  return null
 }
 
 export async function GET(request: Request) {
