@@ -346,13 +346,30 @@ export async function exportProject(
     }
     for (const t of audioTracks) canvasStream.addTrack(t)
 
-    const mimeType = MediaRecorder.isTypeSupported('video/mp4')
-      ? 'video/mp4'
-      : MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
-        ? 'video/webm;codecs=vp9'
-        : 'video/webm'
+    function findMimeType(): string {
+      const types = [
+        'video/mp4;codecs=avc1.42E01E',
+        'video/mp4;codecs=avc1.64001E',
+        'video/mp4',
+        'video/webm;codecs=vp9',
+        'video/webm;codecs=vp8',
+        'video/webm',
+      ]
+      for (const t of types) {
+        try {
+          if (MediaRecorder.isTypeSupported(t)) return t
+        } catch {}
+      }
+      return 'video/webm'
+    }
 
-    const mediaRecorder = new MediaRecorder(canvasStream, { mimeType })
+    const mimeType = findMimeType()
+    let mediaRecorder: MediaRecorder
+    try {
+      mediaRecorder = new MediaRecorder(canvasStream, { mimeType })
+    } catch {
+      mediaRecorder = new MediaRecorder(canvasStream)
+    }
     const chunks: Blob[] = []
     mediaRecorder.ondataavailable = (e) => {
       if (e.data.size > 0) chunks.push(e.data)
