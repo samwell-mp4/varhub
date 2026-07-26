@@ -65,14 +65,14 @@ export function EditorPanel() {
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="O que está acontecendo?"
                   rows={2}
-                  className="w-full bg-transparent text-sm text-zinc-900 placeholder:text-zinc-400 font-medium focus:outline-none resize-none overflow-hidden min-h-[2.5rem]"
+                  className="w-full bg-transparent text-base text-zinc-900 placeholder:text-zinc-400 font-medium focus:outline-none resize-none overflow-hidden min-h-[2.5rem]"
                 />
                 <textarea
                   value={project.subtitle}
                   onChange={(e) => setSubtitle(e.target.value)}
                   placeholder="Adicione um subtítulo"
                   rows={3}
-                  className="w-full bg-transparent text-xs text-zinc-500 placeholder:text-zinc-400 focus:outline-none resize-none overflow-hidden min-h-[3.5rem]"
+                  className="w-full bg-transparent text-base text-zinc-500 placeholder:text-zinc-400 focus:outline-none resize-none overflow-hidden min-h-[3.5rem]"
                 />
                 <div className="flex items-center gap-2 pt-1 border-t border-zinc-100">
                   <select
