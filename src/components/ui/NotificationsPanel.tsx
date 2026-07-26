@@ -5,8 +5,10 @@ import { InstagramPost, ACCOUNTS } from '@/types'
 import { useUIStore } from '@/store'
 import { Bell, BellDot, RefreshCw, ExternalLink, Clock, Heart, MessageCircle, Loader2, AlertCircle, ChevronLeft, ChevronRight, Sparkles, Copy, Check } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { parseImginn } from '@/lib/parseImginn'
 
 const POLL_INTERVAL = 120000
+const CORS_PROXY = 'https://api.allorigins.win/raw?url='
 
 function getKnownIds(): string[] {
   try {
@@ -78,7 +80,44 @@ export function NotificationsPanel() {
       })
       if (!res.ok) throw new Error('Falha ao buscar')
       const data = await res.json()
-      if (!data.all) throw new Error('Sem dados')
+
+      if (data.useProxy) {
+        const incoming: Record<string, { posts: InstagramPost[]; error?: string }> = {}
+        const accounts = data.accounts as string[]
+        let anyOk = false
+        for (const acc of accounts) {
+          try {
+            const url = CORS_PROXY + encodeURIComponent('https://imginn.com/' + acc + '/')
+            const htmlRes = await fetch(url, { signal: AbortSignal.timeout(20000) })
+            if (!htmlRes.ok) continue
+            const html = await htmlRes.text()
+            const posts = parseImginn(html)
+            if (posts) {
+              incoming[acc] = { posts }
+              anyOk = true
+            }
+          } catch { }
+        }
+        if (!anyOk) throw new Error('proxy failed')
+        const incomingIds = new Set<string>()
+        const fresh: string[] = []
+        for (const acc of Object.values(incoming)) {
+          for (const p of acc.posts) {
+            incomingIds.add(p.id)
+            if (!knownIds.current.has(p.id)) fresh.push(p.id)
+          }
+        }
+        if (fresh.length > 0) {
+          setNewIds((prev) => { const n = new Set(prev); fresh.forEach(id => n.add(id)); return n })
+        }
+        knownIds.current = incomingIds
+        saveKnownIds([...incomingIds])
+        setAccountData(incoming)
+        hasData.current = true
+        setLastUpdate(new Date().toLocaleTimeString('pt-BR'))
+        setLoading(false)
+        return
+      }
 
       const incoming: Record<string, { posts: InstagramPost[]; error?: string }> = data.all
 
