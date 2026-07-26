@@ -11,6 +11,7 @@ body {
   background: #0a0a0f;
   color: #ededed;
   font-family: var(--font-sans, Arial, Helvetica, sans-serif);
+  touch-action: manipulation;
 }
 
 ::-webkit-scrollbar {

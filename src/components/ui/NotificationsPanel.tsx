@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { InstagramPost, ACCOUNTS } from '@/types'
 import { useUIStore } from '@/store'
-import { Bell, BellDot, RefreshCw, ExternalLink, Clock, Heart, MessageCircle, Loader2, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Bell, BellDot, RefreshCw, ExternalLink, Clock, Heart, MessageCircle, Loader2, AlertCircle, ChevronLeft, ChevronRight, Sparkles, Copy, Check } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const POLL_INTERVAL = 120000
@@ -127,6 +127,32 @@ export function NotificationsPanel() {
 
   const dismissNew = () => setNewIds(new Set())
   const isMobile = useUIStore((s) => s.isMobile)
+
+  const [generated, setGenerated] = useState<Record<string, string>>({})
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  const generateCaption = (text: string, postId: string) => {
+    if (generated[postId]) { setGenerated((g) => { const n = { ...g }; delete n[postId]; return n }); return }
+    const clean = text.replace(/https?:\/\/[^\s]+/g, '').replace(/#\w+/g, '').trim()
+    const words = clean.split(/\s+/).filter(Boolean)
+    let result = clean
+    if (words.length > 20) {
+      result = words.slice(0, 18).join(' ') + '...'
+    }
+    const tags = ['#var', '#noticias', '#fofoca', '#instagram', '#trending']
+    const extras = ['🔥', '💥', '📢', '⚡', '🚨']
+    const emoji = extras[Math.floor(Math.random() * extras.length)]
+    result = `${emoji} ${result}\n\n．\n${tags.slice(0, 3).join(' ')}`
+    setGenerated((prev) => ({ ...prev, [postId]: result }))
+  }
+
+  const copyText = async (text: string, id: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedId(id)
+      setTimeout(() => setCopiedId(null), 2000)
+    } catch { }
+  }
 
   return (
     <div className={`bg-[#0d0d14] flex flex-col shrink-0 overflow-hidden ${isMobile ? 'w-full flex-1' : 'w-80 border-l border-[#1a1a28]'}`}>
@@ -280,6 +306,27 @@ export function NotificationsPanel() {
                       {post.time}
                     </span>
                   </div>
+                  {generated[post.id] && (
+                    <div className="mt-2 bg-violet-500/5 border border-violet-500/15 rounded-lg p-2.5">
+                      <p className="text-[11px] text-zinc-200 leading-relaxed whitespace-pre-wrap">
+                        {generated[post.id]}
+                      </p>
+                      <button
+                        onClick={() => copyText(generated[post.id], post.id)}
+                        className="mt-1.5 flex items-center gap-1 text-[10px] text-violet-400 hover:text-violet-300 transition-all"
+                      >
+                        {copiedId === post.id ? <Check size={10} /> : <Copy size={10} />}
+                        {copiedId === post.id ? 'Copiado!' : 'Copiar legenda'}
+                      </button>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => generateCaption(post.caption, post.id)}
+                    className="mt-1.5 flex items-center gap-1 text-[10px] text-zinc-600 hover:text-zinc-400 transition-all"
+                  >
+                    <Sparkles size={10} />
+                    {generated[post.id] ? 'Remover legenda' : 'Gerar legenda'}
+                  </button>
                 </div>
                 <a
                   href={`https://www.instagram.com/p/${post.shortcode}/`}

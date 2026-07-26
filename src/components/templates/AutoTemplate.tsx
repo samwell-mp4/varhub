@@ -170,12 +170,12 @@ export function AutoTemplate({ media, templateId, title, subtitle, category, log
         <div className="flex items-start gap-3">
           <div className="shrink-0 mt-0.5">
             {logo ? (
-              <div className="w-12 h-12 rounded-full overflow-hidden ring-2 ring-white/20">
+              <div className="w-16 h-16 rounded-full overflow-hidden ring-2 ring-white/20">
                 <img src={logo} alt="logo" className="w-full h-full object-cover" />
               </div>
             ) : (
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center ring-2 ring-white/10">
-                <span className="text-white text-sm font-bold">S</span>
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center ring-2 ring-white/10">
+                <span className="text-white text-base font-bold">S</span>
               </div>
             )}
           </div>
