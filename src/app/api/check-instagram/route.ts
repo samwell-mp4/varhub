@@ -44,9 +44,12 @@ async function fetchWithRetry(url: string, retries = 2): Promise<string | null> 
       if (res.ok) {
         const text = await res.text()
         if (text && text.length > 500) return text
+        console.error(`[check-instagram] ${url}: response too short (${text?.length || 0})`)
+      } else {
+        console.error(`[check-instagram] ${url}: status ${res.status} ${res.statusText}`)
       }
-    } catch (err) {
-      console.error(`[check-instagram] fetch attempt ${i} failed:`, err)
+    } catch (err: any) {
+      console.error(`[check-instagram] ${url}:`, err?.cause?.code || err?.message || err)
       if (i === retries) return null
     }
   }
@@ -56,6 +59,8 @@ async function fetchWithRetry(url: string, retries = 2): Promise<string | null> 
 const SOURCES = [
   (a: string) => 'https://imginn.com/' + a + '/?_=' + Date.now(),
   (a: string) => 'https://imginn.com/' + a + '/',
+  (a: string) => 'https://imginn.org/' + a + '/?_=' + Date.now(),
+  (a: string) => 'https://imginn.org/' + a + '/',
 ]
 
 function parseImginn(html: string): InstagramPost[] | null {
