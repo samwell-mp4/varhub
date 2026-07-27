@@ -32,34 +32,54 @@ function extractInstagramShortcode(url: string): string | null {
 }
 
 async function youtubeDownload(videoId: string) {
-  const instances = [
-    'https://inv.nadeko.net',
-    'https://invidious.snopyta.org',
-    'https://yewtu.be',
-  ]
-  for (const instance of instances) {
-    try {
-      const res = await fetch(`${instance}/api/v1/videos/${videoId}`, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        },
-        signal: AbortSignal.timeout(10000),
+  const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
+
+  const methods = [
+    async () => {
+      const res = await fetch(`https://www.yt-download.org/api/button/mp4/${encodeURIComponent(videoUrl)}`, {
+        signal: AbortSignal.timeout(15000),
+        redirect: 'follow',
       })
-      if (!res.ok) continue
-      const data = await res.json()
-      const formats = data.adaptiveFormats || []
-      const video = formats
-        .filter((f: any) => f.type?.startsWith('video/mp4') && f.bitrate)
-        .sort((a: any, b: any) => (b.bitrate || 0) - (a.bitrate || 0))[0]
-      const audio = formats
-        .filter((f: any) => f.type?.startsWith('audio/mp4'))
-        .sort((a: any, b: any) => (b.bitrate || 0) - (a.bitrate || 0))[0]
-      if (video?.url) {
-        return {
-          videoUrl: video.url,
-          audioUrl: audio?.url || null,
-          title: data.title || '',
-        }
+      if (!res.ok) return null
+      const text = await res.text()
+      const m = text.match(/href=["']([^"']+\.mp4[^"']*)["']/i)
+      if (m) return m[1]
+      return res.url.includes('video') || res.url.includes('.mp4') ? res.url : null
+    },
+    async () => {
+      const instances = [
+        'https://inv.nadeko.net',
+        'https://invidious.snopyta.org',
+        'https://yewtu.be',
+      ]
+      for (const instance of instances) {
+        try {
+          const res = await fetch(`${instance}/api/v1/videos/${videoId}`, {
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+            signal: AbortSignal.timeout(8000),
+          })
+          if (!res.ok) continue
+          const data = await res.json()
+          const formats = [...(data.adaptiveFormats || []), ...(data.formatStreams || [])]
+          const video = formats
+            .filter((f: any) => f.type?.startsWith('video/mp4') && f.bitrate)
+            .sort((a: any, b: any) => (b.bitrate || 0) - (a.bitrate || 0))[0]
+          const audio = formats
+            .filter((f: any) => f.type?.startsWith('audio/mp4'))
+            .sort((a: any, b: any) => (b.bitrate || 0) - (a.bitrate || 0))[0]
+          if (video?.url) return { videoUrl: video.url, audioUrl: audio?.url || null, title: data.title || '' }
+        } catch {}
+      }
+      return null
+    },
+  ]
+
+  for (const method of methods) {
+    try {
+      const result = await method()
+      if (result) {
+        if (typeof result === 'string') return { videoUrl: result, audioUrl: null, title: '' }
+        return result
       }
     } catch {}
   }
@@ -67,47 +87,92 @@ async function youtubeDownload(videoId: string) {
 }
 
 async function instagramDownload(shortcode: string) {
-  const urls = [
-    `https://imginn.com/p/${shortcode}/`,
-    `https://imginn.org/p/${shortcode}/`,
-  ]
-  for (const url of urls) {
-    try {
-      const res = await fetch(url, {
+  const postUrl = `https://www.instagram.com/p/${shortcode}/`
+
+  const methods = [
+    async () => {
+      const res = await fetch(postUrl, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          'Accept': 'text/html,application/xhtml+xml',
+          'User-Agent': 'Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9',
           'Accept-Language': 'pt-BR,pt;q=0.9',
+          'Sec-Fetch-Mode': 'navigate',
         },
         signal: AbortSignal.timeout(15000),
       })
+      if (!res.ok) return null
       const html = await res.text()
-      const videoMatch = html.match(/<video[^>]*src="([^"]+)"/)
-      if (videoMatch) {
-        return {
-          videoUrl: videoMatch[1].startsWith('http') ? videoMatch[1] : `https:${videoMatch[1]}`,
-          audioUrl: null,
-          title: '',
-        }
+      const jsonMatch = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)
+      if (jsonMatch) {
+        try {
+          const json = JSON.parse(jsonMatch[1])
+          const videoUrl = json?.video?.contentUrl || json.contentUrl
+          if (videoUrl) return { videoUrl, audioUrl: null, title: json?.name || json?.caption || '' }
+        } catch {}
       }
-      const imgMatch = html.match(/<meta\s+property="og:image"\s+content="([^"]+)"/i)
-      if (imgMatch) {
-        return {
-          videoUrl: imgMatch[1],
-          audioUrl: null,
-          title: '',
-        }
+      const ogMatch = html.match(/<meta\s+property="og:video"\s+content="([^"]+)"/i)
+      if (ogMatch) return { videoUrl: ogMatch[1], audioUrl: null, title: '' }
+      const ogImg = html.match(/<meta\s+property="og:image"\s+content="([^"]+)"/i)
+      if (ogImg) return { videoUrl: ogImg[1], audioUrl: null, title: '' }
+      return null
+    },
+    async () => {
+      const urls = [
+        `https://imginn.com/p/${shortcode}/`,
+        `https://imginn.org/p/${shortcode}/`,
+      ]
+      for (const url of urls) {
+        try {
+          const res = await fetch(url, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+              'Accept-Language': 'pt-BR,pt;q=0.9',
+            },
+            signal: AbortSignal.timeout(10000),
+          })
+          if (!res.ok) continue
+          const html = await res.text()
+          const videoMatch = html.match(/<video[^>]*src="([^"]+)"/)
+          if (videoMatch) {
+            const videoUrl = videoMatch[1].startsWith('http') ? videoMatch[1] : `https:${videoMatch[1]}`
+            return { videoUrl, audioUrl: null, title: '' }
+          }
+        } catch {}
       }
+      return null
+    },
+    async () => {
+      const res = await fetch(`https://api.vevioz.com/api/instagram/${encodeURIComponent(postUrl)}`, {
+        signal: AbortSignal.timeout(10000),
+        redirect: 'manual',
+      })
+      if (res.status === 301 || res.status === 302) {
+        const location = res.headers.get('location')
+        if (location) return { videoUrl: location, audioUrl: null, title: '' }
+      }
+      if (res.ok) {
+        const text = await res.text()
+        const m = text.match(/href=["']([^"']+)["']/i)
+        if (m) return { videoUrl: m[1], audioUrl: null, title: '' }
+      }
+      return null
+    },
+  ]
+
+  for (const method of methods) {
+    try {
+      const result = await method()
+      if (result) return result
     } catch {}
   }
   return null
 }
 
 async function facebookDownload(url: string) {
-  const attempts = [
+  const methods = [
     async () => {
       const res = await fetch(`https://api.vevioz.com/api/button/facebook/${encodeURIComponent(url)}`, {
-        signal: AbortSignal.timeout(15000),
+        signal: AbortSignal.timeout(10000),
         redirect: 'manual',
       })
       if (res.status === 301 || res.status === 302) {
@@ -124,6 +189,7 @@ async function facebookDownload(url: string) {
         },
         signal: AbortSignal.timeout(15000),
       })
+      if (!res.ok) return null
       const html = await res.text()
       const m = html.match(/<meta\s+property="og:video"\s+content="([^"]+)"/i)
       if (m) return { videoUrl: m[1], audioUrl: null, title: '' }
@@ -132,32 +198,39 @@ async function facebookDownload(url: string) {
       return null
     },
   ]
-  for (const attempt of attempts) {
-    const result = await attempt()
-    if (result) return result
+
+  for (const method of methods) {
+    try {
+      const result = await method()
+      if (result) return result
+    } catch {}
   }
   return null
 }
 
 async function tiktokDownload(url: string) {
   const body = new URLSearchParams({ url, hd: '1' })
-  const res = await fetch('https://www.tikwm.com/api/', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      'Accept': 'application/json',
-    },
-    body: body.toString(),
-    signal: AbortSignal.timeout(20000),
-  })
-  const data = await res.json()
-  if (data.code !== 0) return null
-  return {
-    videoUrl: data.data.hdplay || data.data.play || null,
-    audioUrl: data.data.music || null,
-    title: data.data.title || '',
-  }
+  try {
+    const res = await fetch('https://www.tikwm.com/api/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': 'Mozilla/5.0',
+        'Accept': 'application/json',
+      },
+      body: body.toString(),
+      signal: AbortSignal.timeout(15000),
+    })
+    const data = await res.json()
+    if (data.code === 0) {
+      return {
+        videoUrl: data.data.hdplay || data.data.play || null,
+        audioUrl: data.data.music || null,
+        title: data.data.title || '',
+      }
+    }
+  } catch {}
+  return null
 }
 
 export async function POST(request: Request) {
