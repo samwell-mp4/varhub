@@ -36,22 +36,53 @@ async function youtubeDownload(videoId: string) {
 
   const methods = [
     async () => {
-      const res = await fetch(`https://www.yt-download.org/api/button/mp4/${encodeURIComponent(videoUrl)}`, {
+      const res = await fetch(`https://api.vevioz.com/api/button/mp4/${encodeURIComponent(videoUrl)}`, {
         signal: AbortSignal.timeout(15000),
-        redirect: 'follow',
+        redirect: 'manual',
       })
-      if (!res.ok) return null
-      const text = await res.text()
-      const m = text.match(/href=["']([^"']+\.mp4[^"']*)["']/i)
-      if (m) return m[1]
-      return res.url.includes('video') || res.url.includes('.mp4') ? res.url : null
+      if (res.status === 301 || res.status === 302) {
+        const location = res.headers.get('location')
+        if (location) return { videoUrl: location, audioUrl: null, title: '' }
+      }
+      return null
     },
     async () => {
-      const instances = [
-        'https://inv.nadeko.net',
-        'https://invidious.snopyta.org',
-        'https://yewtu.be',
-      ]
+      const res = await fetch(`https://www.yt-download.org/api/button/mp4/${encodeURIComponent(videoUrl)}`, {
+        signal: AbortSignal.timeout(15000),
+        redirect: 'manual',
+      })
+      if (res.status === 301 || res.status === 302) {
+        const location = res.headers.get('location')
+        if (location) return { videoUrl: location, audioUrl: null, title: '' }
+      }
+      if (res.ok) {
+        const text = await res.text()
+        const m = text.match(/href=["']([^"']+\.mp4[^"']*)["']/i)
+        if (m) return { videoUrl: m[1], audioUrl: null, title: '' }
+        const m2 = text.match(/href=["']([^"']+video[^"']*)["']/i)
+        if (m2) return { videoUrl: m2[1], audioUrl: null, title: '' }
+      }
+      return null
+    },
+    async () => {
+      const res = await fetch(`https://inv.nadeko.net/api/v1/videos/${videoId}`, {
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+        signal: AbortSignal.timeout(10000),
+      })
+      if (!res.ok) return null
+      const data = await res.json()
+      const formats = [...(data.adaptiveFormats || []), ...(data.formatStreams || [])]
+      const video = formats
+        .filter((f: any) => f.type?.startsWith('video/mp4') && f.bitrate)
+        .sort((a: any, b: any) => (b.bitrate || 0) - (a.bitrate || 0))[0]
+      const audio = formats
+        .filter((f: any) => f.type?.startsWith('audio/mp4'))
+        .sort((a: any, b: any) => (b.bitrate || 0) - (a.bitrate || 0))[0]
+      if (video?.url) return { videoUrl: video.url, audioUrl: audio?.url || null, title: data.title || '' }
+      return null
+    },
+    async () => {
+      const instances = ['https://invidious.snopyta.org', 'https://yewtu.be']
       for (const instance of instances) {
         try {
           const res = await fetch(`${instance}/api/v1/videos/${videoId}`, {
@@ -62,7 +93,7 @@ async function youtubeDownload(videoId: string) {
           const data = await res.json()
           const formats = [...(data.adaptiveFormats || []), ...(data.formatStreams || [])]
           const video = formats
-            .filter((f: any) => f.type?.startsWith('video/mp4') && f.bitrate)
+            .filter((f: any) => f.type?.startsWith('video/mp4'))
             .sort((a: any, b: any) => (b.bitrate || 0) - (a.bitrate || 0))[0]
           const audio = formats
             .filter((f: any) => f.type?.startsWith('audio/mp4'))
@@ -77,10 +108,7 @@ async function youtubeDownload(videoId: string) {
   for (const method of methods) {
     try {
       const result = await method()
-      if (result) {
-        if (typeof result === 'string') return { videoUrl: result, audioUrl: null, title: '' }
-        return result
-      }
+      if (result) return result
     } catch {}
   }
   return null
