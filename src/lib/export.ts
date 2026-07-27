@@ -265,6 +265,10 @@ export async function exportProject(
   onProgress?.('Preparando mídias...')
 
   const videoElements = new Map<string, HTMLVideoElement>()
+  const hiddenContainer = document.createElement('div')
+  hiddenContainer.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none'
+  document.body.appendChild(hiddenContainer)
+
   for (const media of project.media) {
     if (media.type === 'video') {
       const video = document.createElement('video')
@@ -272,6 +276,8 @@ export async function exportProject(
       video.crossOrigin = 'anonymous'
       video.playsInline = true
       video.preload = 'auto'
+      video.muted = false
+      hiddenContainer.appendChild(video)
       await new Promise<void>((resolve) => {
         video.onloadeddata = () => resolve()
         video.onerror = () => resolve()
@@ -298,7 +304,7 @@ export async function exportProject(
       canvas.toBlob((b) => resolve(b!), 'image/png')
     )
     downloadBlob(blob, `${project.title || 'arte'}.png`)
-    cleanupVideos(videoElements)
+    cleanupVideos(videoElements, hiddenContainer)
     return
   }
 
@@ -315,7 +321,7 @@ export async function exportProject(
       canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.95)
     )
     downloadBlob(blob, `${project.title || 'arte'}.jpg`)
-    cleanupVideos(videoElements)
+    cleanupVideos(videoElements, hiddenContainer)
     return
   }
 
@@ -336,23 +342,29 @@ export async function exportProject(
 
     const canvasStream = canvas.captureStream(FPS)
 
-    const audioTracks: MediaStreamTrack[] = []
-    for (const [, video] of videoElements) {
-      try {
-        const vStream = (video as any).captureStream() as MediaStream
-        const tracks = vStream.getAudioTracks()
-        for (const t of tracks) audioTracks.push(t)
-      } catch {}
-    }
-    for (const t of audioTracks) canvasStream.addTrack(t)
+    let audioCtx: AudioContext | null = null
+    const audioSources: MediaElementAudioSourceNode[] = []
+    try {
+      audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)()
+      const dest = audioCtx.createMediaStreamDestination()
+      for (const [, video] of videoElements) {
+        try {
+          const source = audioCtx.createMediaElementSource(video)
+          source.connect(dest)
+          audioSources.push(source)
+        } catch {}
+      }
+      const audioTracks = dest.stream.getAudioTracks()
+      for (const t of audioTracks) canvasStream.addTrack(t)
+    } catch {}
 
     function findMimeType(): string {
       const types = [
-        'video/mp4;codecs=avc1.42E01E',
-        'video/mp4;codecs=avc1.64001E',
+        'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+        'video/mp4;codecs=avc1.64001E,mp4a.40.2',
         'video/mp4',
-        'video/webm;codecs=vp9',
-        'video/webm;codecs=vp8',
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
         'video/webm',
       ]
       for (const t of types) {
@@ -379,6 +391,12 @@ export async function exportProject(
       mediaRecorder.onstop = () => resolve()
     })
 
+    for (const [id, video] of videoElements) {
+      const media = project.media.find((m) => m.id === id)
+      video.currentTime = media?.trim?.start ?? 0
+    }
+    await new Promise((r) => setTimeout(r, 50))
+
     mediaRecorder.start()
     const startTime = performance.now()
     const frameDuration = 1000 / FPS
@@ -388,7 +406,7 @@ export async function exportProject(
       const elapsed = (performance.now() - startTime) / 1000
       if (elapsed >= duration) break
 
-      if (frame % 15 === 0) {
+      if (frame % Math.round(FPS / 2) === 0) {
         const pct = Math.min(100, Math.round((elapsed / duration) * 100))
         onProgress?.(`Exportando... ${pct}%`)
       }
@@ -410,7 +428,11 @@ export async function exportProject(
 
       const nextFrame = startTime + (frame + 1) * frameDuration
       const delay = Math.max(0, nextFrame - performance.now())
-      await new Promise((r) => setTimeout(r, delay))
+      if (delay > 0) {
+        await new Promise((r) => setTimeout(r, delay))
+      } else {
+        await new Promise((r) => setTimeout(r, 0))
+      }
       frame++
     }
 
@@ -418,8 +440,14 @@ export async function exportProject(
     onProgress?.('Finalizando...')
     await recordingDone
 
-    for (const t of audioTracks) t.stop()
-    cleanupVideos(videoElements)
+    cleanupVideos(videoElements, hiddenContainer)
+
+    if (audioCtx) {
+      for (const s of audioSources) {
+        try { s.disconnect() } catch {}
+      }
+      audioCtx.close().catch(() => {})
+    }
 
     const ext = mimeType.startsWith('video/mp4') ? 'mp4' : 'webm'
     const blob = new Blob(chunks, { type: mimeType })
@@ -427,10 +455,13 @@ export async function exportProject(
   }
 }
 
-function cleanupVideos(map: Map<string, HTMLVideoElement>) {
+function cleanupVideos(map: Map<string, HTMLVideoElement>, container?: HTMLDivElement) {
   for (const video of map.values()) {
     video.pause()
     video.src = ''
     video.load()
+  }
+  if (container?.parentNode) {
+    container.parentNode.removeChild(container)
   }
 }
