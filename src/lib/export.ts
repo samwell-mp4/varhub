@@ -1,4 +1,4 @@
-import { Project, ExportFormat, MediaItem } from '@/types'
+import { Project, ExportFormat } from '@/types'
 import { TEMPLATES } from './autoLayout'
 
 const WIDTH = 1080
@@ -21,6 +21,7 @@ function measureText(
   font: string,
   maxWidth: number
 ): string[] {
+
   ctx.font = font
   const words = text.split(' ')
   const lines: string[] = []
@@ -158,7 +159,6 @@ async function renderFrame(
   canvas: HTMLCanvasElement,
   project: Project,
   videoElements: Map<string, HTMLVideoElement>,
-  currentTime: number
 ) {
   ctx.fillStyle = project.bgColor || '#000000'
   ctx.fillRect(0, 0, WIDTH, HEIGHT)
@@ -221,14 +221,6 @@ async function renderFrame(
     } else if (mediaItem.type === 'video') {
       const video = videoElements.get(mediaItem.id)
       if (video) {
-        const trim = mediaItem.trim
-        let seekTime = currentTime
-        if (trim) {
-          seekTime = trim.start + (currentTime % (trim.end - trim.start))
-          if (video.paused || Math.abs(video.currentTime - seekTime) > 0.5) {
-            try { video.currentTime = seekTime } catch {}
-          }
-        }
         const vAspect = video.videoWidth / video.videoHeight || 1
         const slotAspect = sw / sh
         let dw: number, dh: number, dx: number, dy: number
@@ -277,7 +269,6 @@ export async function exportProject(
     if (media.type === 'video') {
       const video = document.createElement('video')
       video.src = media.src
-      video.muted = true
       video.crossOrigin = 'anonymous'
       video.playsInline = true
       video.preload = 'auto'
@@ -296,7 +287,12 @@ export async function exportProject(
 
   if (format === 'png') {
     onProgress?.('Renderizando...')
-    await renderFrame(ctx, canvas, project, videoElements, 0)
+    for (const [id, video] of videoElements) {
+      video.pause()
+      const media = project.media.find((m) => m.id === id)
+      video.currentTime = media?.trim?.start ?? 0
+    }
+    await renderFrame(ctx, canvas, project, videoElements)
     onProgress?.('Codificando PNG...')
     const blob = await new Promise<Blob>((resolve) =>
       canvas.toBlob((b) => resolve(b!), 'image/png')
@@ -308,7 +304,12 @@ export async function exportProject(
 
   if (format === 'jpg') {
     onProgress?.('Renderizando...')
-    await renderFrame(ctx, canvas, project, videoElements, 0)
+    for (const [id, video] of videoElements) {
+      video.pause()
+      const media = project.media.find((m) => m.id === id)
+      video.currentTime = media?.trim?.start ?? 0
+    }
+    await renderFrame(ctx, canvas, project, videoElements)
     onProgress?.('Codificando JPG...')
     const blob = await new Promise<Blob>((resolve) =>
       canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.95)
@@ -320,7 +321,7 @@ export async function exportProject(
 
   if (format === 'mp4') {
     onProgress?.('Preparando vídeo...')
-    await renderFrame(ctx, canvas, project, videoElements, 0)
+    await renderFrame(ctx, canvas, project, videoElements)
 
     const hasVideo = project.media.some((m) => m.type === 'video')
     let duration = hasVideo ? 3 : (imageDuration ?? 3)
@@ -337,7 +338,6 @@ export async function exportProject(
 
     const audioTracks: MediaStreamTrack[] = []
     for (const [, video] of videoElements) {
-      video.muted = false
       try {
         const vStream = (video as any).captureStream() as MediaStream
         const tracks = vStream.getAudioTracks()
@@ -393,24 +393,20 @@ export async function exportProject(
         onProgress?.(`Exportando... ${pct}%`)
       }
 
-      const time = elapsed % duration
-
       for (const [id, video] of videoElements) {
         const media = project.media.find((m) => m.id === id)
         if (media?.trim) {
-          const seekTime = media.trim.start + (time % (media.trim.end - media.trim.start))
-          if (Math.abs(video.currentTime - seekTime) > 0.3) {
-            try { video.currentTime = seekTime } catch {}
+          if (video.currentTime >= media.trim.end) {
+            video.currentTime = media.trim.start
           }
         } else if (media?.duration) {
-          const seekTime = time % media.duration
-          if (Math.abs(video.currentTime - seekTime) > 0.3) {
-            try { video.currentTime = seekTime } catch {}
+          if (video.currentTime >= media.duration) {
+            video.currentTime = 0
           }
         }
       }
 
-      await renderFrame(ctx, canvas, project, videoElements, time)
+      await renderFrame(ctx, canvas, project, videoElements)
 
       const nextFrame = startTime + (frame + 1) * frameDuration
       const delay = Math.max(0, nextFrame - performance.now())
