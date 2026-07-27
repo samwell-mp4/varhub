@@ -27,7 +27,7 @@ function extractYoutubeId(url: string): string | null {
 }
 
 function extractInstagramShortcode(url: string): string | null {
-  const m = url.match(/instagram\.com\/(?:p|reel|tv)\/([^/?&]+)/)
+  const m = url.match(/instagram\.com\/(?:p|reel|reels|tv)\/([^/?&]+)/)
   return m ? m[1] : null
 }
 
