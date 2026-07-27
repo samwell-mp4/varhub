@@ -22,6 +22,20 @@ function saveKnownIds(ids: string[]) {
   localStorage.setItem('notificacoes_ids', JSON.stringify(ids))
 }
 
+function getCachedData(): Record<string, { posts: InstagramPost[]; error?: string }> | null {
+  try {
+    return JSON.parse(localStorage.getItem('notificacoes_data') || 'null')
+  } catch {
+    return null
+  }
+}
+
+function saveCachedData(data: Record<string, { posts: InstagramPost[]; error?: string }>) {
+  try {
+    localStorage.setItem('notificacoes_data', JSON.stringify(data))
+  } catch {}
+}
+
 export function NotificationsPanel() {
   const [accountData, setAccountData] = useState<Record<string, { posts: InstagramPost[]; error?: string }>>({})
   const [activeTab, setActiveTab] = useState('all')
@@ -73,32 +87,49 @@ export function NotificationsPanel() {
   const hasAnyError = Object.values(accountData).some((d) => d.error)
 
   const checkPosts = useCallback(async () => {
+    const cached = getCachedData()
+    if (cached) {
+      setAccountData(cached)
+      hasData.current = true
+    }
+
     setLoading(true)
     try {
       const res = await fetch('/api/check-instagram?_=' + Date.now(), {
-        signal: AbortSignal.timeout(30000),
+        signal: AbortSignal.timeout(15000),
       })
       if (!res.ok) throw new Error('Falha ao buscar')
       const data = await res.json()
 
       if (data.useProxy) {
-        const incoming: Record<string, { posts: InstagramPost[]; error?: string }> = {}
         const accounts = data.accounts as string[]
+        const results = await Promise.allSettled(accounts.map(async (acc) => {
+          const urls = [
+            CORS_PROXY + encodeURIComponent('https://imginn.com/' + acc + '/'),
+            CORS_PROXY + encodeURIComponent('https://imginn.org/' + acc + '/'),
+          ]
+          for (const url of urls) {
+            try {
+              const htmlRes = await fetch(url, { signal: AbortSignal.timeout(10000) })
+              if (!htmlRes.ok) continue
+              const html = await htmlRes.text()
+              const posts = parseImginn(html)
+              if (posts) return { acc, posts } as const
+            } catch {}
+          }
+          return null
+        }))
+
+        const incoming: Record<string, { posts: InstagramPost[]; error?: string }> = {}
         let anyOk = false
-        for (const acc of accounts) {
-          try {
-            const url = CORS_PROXY + encodeURIComponent('https://imginn.com/' + acc + '/')
-            const htmlRes = await fetch(url, { signal: AbortSignal.timeout(20000) })
-            if (!htmlRes.ok) continue
-            const html = await htmlRes.text()
-            const posts = parseImginn(html)
-            if (posts) {
-              incoming[acc] = { posts }
-              anyOk = true
-            }
-          } catch { }
+        for (const r of results) {
+          if (r.status === 'fulfilled' && r.value) {
+            incoming[r.value.acc] = { posts: r.value.posts }
+            anyOk = true
+          }
         }
         if (!anyOk) throw new Error('proxy failed')
+
         const incomingIds = new Set<string>()
         const fresh: string[] = []
         for (const acc of Object.values(incoming)) {
@@ -112,6 +143,7 @@ export function NotificationsPanel() {
         }
         knownIds.current = incomingIds
         saveKnownIds([...incomingIds])
+        saveCachedData(incoming)
         setAccountData(incoming)
         hasData.current = true
         setLastUpdate(new Date().toLocaleTimeString('pt-BR'))
@@ -127,9 +159,7 @@ export function NotificationsPanel() {
       for (const acc of Object.values(incoming)) {
         for (const p of acc.posts) {
           incomingIds.add(p.id)
-          if (!knownIds.current.has(p.id)) {
-            fresh.push(p.id)
-          }
+          if (!knownIds.current.has(p.id)) fresh.push(p.id)
         }
       }
 
@@ -143,6 +173,7 @@ export function NotificationsPanel() {
 
       knownIds.current = incomingIds
       saveKnownIds([...incomingIds])
+      saveCachedData(incoming)
       setAccountData(incoming)
       hasData.current = true
       setLastUpdate(new Date().toLocaleTimeString('pt-BR'))
