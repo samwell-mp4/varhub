@@ -9,6 +9,7 @@ import { TemplatesPanel } from '@/components/ui/TemplatesPanel'
 import { ProjectsPanel } from '@/components/ui/ProjectsPanel'
 import { SettingsPanel } from '@/components/ui/SettingsPanel'
 import { NotificationsPanel } from '@/components/ui/NotificationsPanel'
+import { FerramentasPanel } from '@/components/ui/FerramentasPanel'
 import { useUIStore, useProjectStore } from '@/store'
 import { ExportOverlay } from '@/components/ui/ExportOverlay'
 import { MobileNav } from '@/components/layout/MobileNav'
@@ -166,6 +167,7 @@ export default function Home() {
                     {activeTab === 'templates' && <TemplatesPanel />}
                     {activeTab === 'projetos' && <ProjectsPanel />}
                     {activeTab === 'notificacoes' && <NotificationsPanel />}
+                    {activeTab === 'ferramentas' && <FerramentasPanel />}
                     {activeTab === 'configuracoes' && <SettingsPanel />}
                     {activeTab === 'upload' && project.media.length === 0 && (
                       <div className="p-4 text-center">
@@ -269,6 +271,7 @@ export default function Home() {
           {activeTab === 'templates' && <TemplatesPanel />}
           {activeTab === 'projetos' && <ProjectsPanel />}
           {activeTab === 'notificacoes' && <NotificationsPanel />}
+          {activeTab === 'ferramentas' && <FerramentasPanel />}
           {activeTab === 'configuracoes' && <SettingsPanel />}
         </main>
       </div>

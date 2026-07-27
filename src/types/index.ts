@@ -56,7 +56,7 @@ export interface TemplateSlot {
 
 export type ExportFormat = 'png' | 'jpg' | 'mp4'
 
-export type TabId = 'templates' | 'projetos' | 'upload' | 'configuracoes' | 'notificacoes'
+export type TabId = 'templates' | 'projetos' | 'upload' | 'configuracoes' | 'notificacoes' | 'ferramentas'
 
 export interface InstagramPost {
   id: string

@@ -8,12 +8,14 @@ import {
   Upload,
   Settings,
   Bell,
+  Wrench,
 } from 'lucide-react'
 
 const tabs: { id: TabId; label: string; icon: typeof Upload }[] = [
   { id: 'upload', label: 'Upload', icon: Upload },
   { id: 'templates', label: 'Modelos', icon: LayoutTemplate },
   { id: 'projetos', label: 'Projetos', icon: FolderOpen },
+  { id: 'ferramentas', label: 'Ferramentas', icon: Wrench },
   { id: 'notificacoes', label: 'Novidades', icon: Bell },
   { id: 'configuracoes', label: 'Ajustes', icon: Settings },
 ]
