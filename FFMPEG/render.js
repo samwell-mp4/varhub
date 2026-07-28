@@ -220,7 +220,7 @@ export async function renderVideo(project, workDir) {
     await writeFile(catFile, cleanText(project.category.toUpperCase()), 'utf8')
     filterParts.push(
       `[${lastLabel}]drawtext=textfile=${catFile}:` +
-      `x=${textX}:y=${textY}:fontsize=18:fontcolor=#a78bfa:fontfile=${fontRegular}:line_spacing=8:text_encoding=utf-8:fix_bounds=1[cat]`
+      `x=${textX}:y=${textY}:fontsize=18:fontcolor=#a78bfa:fontfile=${fontRegular}:line_spacing=8:fix_bounds=1[cat]`
     )
     lastLabel = 'cat'
     textY += 26
@@ -233,7 +233,7 @@ export async function renderVideo(project, workDir) {
     await writeFile(titleFile, wrapText(project.title, textMaxW, fontSize), 'utf8')
     filterParts.push(
       `[${lastLabel}]drawtext=textfile=${titleFile}:` +
-      `x=${textX}:y=${textY}:fontsize=${fontSize}:fontcolor=${project.titleColor || '#ffffff'}${bold}:line_spacing=12:text_encoding=utf-8:fix_bounds=1[title]`
+      `x=${textX}:y=${textY}:fontsize=${fontSize}:fontcolor=${project.titleColor || '#ffffff'}${bold}:line_spacing=12:fix_bounds=1[title]`
     )
     lastLabel = 'title'
     const lines = project.title ? wrapText(project.title, textMaxW, fontSize).split('\n').length : 1
@@ -247,7 +247,7 @@ export async function renderVideo(project, workDir) {
     await writeFile(subFile, wrapText(project.subtitle, textMaxW, subSize), 'utf8')
     filterParts.push(
       `[${lastLabel}]drawtext=textfile=${subFile}:` +
-      `x=${textX}:y=${textY}:fontsize=${subSize}:fontcolor=${project.subtitleColor || '#a1a1aa'}${subBold}:line_spacing=12:text_encoding=utf-8:fix_bounds=1[sub]`
+      `x=${textX}:y=${textY}:fontsize=${subSize}:fontcolor=${project.subtitleColor || '#a1a1aa'}${subBold}:line_spacing=12:fix_bounds=1[sub]`
     )
     lastLabel = 'sub'
   }
