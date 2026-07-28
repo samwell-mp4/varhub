@@ -19,15 +19,39 @@ export function Header() {
   const serverExport = async (imageDuration?: number) => {
     setExporting(true, 'Renderizando no servidor...')
     try {
-      const proj = { ...project }
-      if (imageDuration && project.media.every(m => m.type === 'image')) {
+      const proj = JSON.parse(JSON.stringify(project))
+      if (imageDuration && proj.media.every(m => m.type === 'image')) {
         for (const m of proj.media) {
           if (m.type === 'image') {
-            ;(m as any).duration = imageDuration
-            ;(m as any).trim = undefined
+            m.duration = imageDuration
+            m.trim = undefined
           }
         }
       }
+
+      const toDataUrl = async (src: string): Promise<string | undefined> => {
+        if (src.startsWith('data:')) return src
+        try {
+          const res = await fetch(src)
+          const blob = await res.blob()
+          return new Promise((resolve, reject) => {
+            const r = new FileReader()
+            r.onload = () => resolve(r.result as string)
+            r.onerror = reject
+            r.readAsDataURL(blob)
+          })
+        } catch { return undefined }
+      }
+
+      if (proj.logo && !proj.logo.startsWith('data:')) {
+        proj.logo = await toDataUrl(proj.logo).catch(() => undefined)
+      }
+      for (const m of proj.media || []) {
+        if (m.src && !m.src.startsWith('data:')) {
+          m.src = await toDataUrl(m.src).catch(() => m.src)
+        }
+      }
+
       const rendererUrl = process.env.NEXT_PUBLIC_RENDERER_URL || 'https://var-hub-ffmpeg.hx8235.easypanel.host'
       const renderSecret = process.env.NEXT_PUBLIC_RENDER_SECRET || 'changeme'
       const res = await fetch(`${rendererUrl}/render`, {
