@@ -43,7 +43,7 @@ export function Header() {
     timer = setInterval(updateProgress, 1000)
     try {
       const proj: Record<string, any> = JSON.parse(JSON.stringify(project))
-      if (imageDuration && proj.media.every((m: any) => m.type === 'image')) {
+      if (imageDuration) {
         for (const m of proj.media) {
           if (m.type === 'image') {
             m.duration = imageDuration
