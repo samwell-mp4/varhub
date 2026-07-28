@@ -103,7 +103,7 @@ export async function renderVideo(project, workDir) {
     const cropH = Math.min(sh, targetH)
 
     filterParts.push(
-      `[${i}:v]${trim}${loop}${fpsFilter}scale=${targetW}:${targetH}:force_original_aspect_ratio=1,crop=${cropW}:${cropH}:${cropX}:${cropY},setpts=PTS-STARTPTS[${cropLabel}]`
+      `[${i}:v]${trim}${loop}${fpsFilter}scale=${targetW}:${targetH}:force_original_aspect_ratio=2,crop=${cropW}:${cropH}:${cropX}:${cropY},setpts=PTS-STARTPTS[${cropLabel}]`
     )
 
     if (media.type === 'video' && media.trim) {
