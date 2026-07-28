@@ -10,6 +10,8 @@ const app = express()
 const PORT = process.env.PORT || 3001
 const SECRET = process.env.RENDER_SECRET || 'changeme'
 
+app.use(express.json({ limit: '500mb' }))
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 500 * 1024 * 1024 },
@@ -19,7 +21,14 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', ffmpeg: process.env.FFMPEG_PATH || 'ffmpeg' })
 })
 
-app.post('/render', upload.any(), async (req, res) => {
+app.post('/render', (req, res, next) => {
+  const ct = req.headers['content-type'] || ''
+  if (ct.includes('multipart')) {
+    upload.any()(req, res, next)
+  } else {
+    next()
+  }
+}, async (req, res) => {
   if (req.headers['x-secret'] !== SECRET) {
     return res.status(401).json({ error: 'invalid secret' })
   }
@@ -31,7 +40,7 @@ app.post('/render', upload.any(), async (req, res) => {
   try {
     let project
     if (req.body.project) {
-      project = JSON.parse(req.body.project)
+      project = typeof req.body.project === 'string' ? JSON.parse(req.body.project) : req.body.project
     } else {
       return res.status(400).json({ error: 'project data required' })
     }

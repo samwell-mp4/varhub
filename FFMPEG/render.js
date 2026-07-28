@@ -60,7 +60,12 @@ export async function renderVideo(project, workDir) {
     const outLabel = `${slotLabel}_o`
 
     // save media to disk
-    if (media.type === 'video') {
+    const isDataUrl = media.src?.startsWith('data:')
+    if (!isDataUrl) {
+      inputArgs.push('-i', join(workDir, media.src))
+    } else if (media.type === 'video') {
+      const b64 = media.src.replace(/^data:video\/\w+;base64,/, '')
+      await writeFile(join(workDir, `media_${i}.mp4`), Buffer.from(b64, 'base64'))
       inputArgs.push('-i', join(workDir, `media_${i}.mp4`))
     } else {
       const b64 = media.src.replace(/^data:image\/\w+;base64,/, '')
@@ -134,19 +139,21 @@ export async function renderVideo(project, workDir) {
   const textMaxW = W - PAD - LOGO_SIZE - 16 - PAD
 
   if (project.logo) {
-    const b64 = project.logo.replace(/^data:image\/\w+;base64,/, '')
     const isDataUrl = project.logo.startsWith('data:')
     if (isDataUrl) {
+      const b64 = project.logo.replace(/^data:image\/\w+;base64,/, '')
       await writeFile(join(workDir, 'logo.png'), Buffer.from(b64, 'base64'))
-      inputArgs.unshift('-i', join(workDir, 'logo.png'))
-      const origInputs = mediaItems.length
+      inputArgs.push('-i', join(workDir, 'logo.png'))
+      const logoIdx = mediaItems.length
       filterParts.push(
-        `[${origInputs}:v]scale=${LOGO_SIZE}:${LOGO_SIZE}[logo_scaled]`,
+        `[${logoIdx}:v]scale=${LOGO_SIZE}:${LOGO_SIZE}[logo_scaled]`,
         `[${lastLabel}][logo_scaled]overlay=${PAD}:${PAD}[with_logo]`
       )
       lastLabel = 'with_logo'
+    } else if (project.logo.startsWith('/')) {
+      inputArgs.push('-i', join(workDir, '..', project.logo.slice(1)))
     } else {
-      inputArgs.unshift('-i', `"${join(workDir, '..', project.logo)}"`)
+      inputArgs.push('-i', project.logo)
     }
   }
 
