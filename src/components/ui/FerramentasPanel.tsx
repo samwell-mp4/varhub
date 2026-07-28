@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Download, Link, Loader2, Music, Check, Play, Camera, MessageCircle, Wrench } from 'lucide-react'
+import { Download, Link, Loader2, Music, Play, Camera, MessageCircle, Wrench } from 'lucide-react'
 import { useUIStore } from '@/store'
 
 const PLATFORMS = [
@@ -80,7 +80,6 @@ export function FerramentasPanel() {
         return
       }
       setResult(data)
-      triggerDownload(data.videoUrl)
     } catch {
       setError('Erro de conexão ao servidor')
     } finally {
@@ -165,10 +164,12 @@ export function FerramentasPanel() {
               {result.title && (
                 <p className="text-xs text-zinc-500 truncate">{result.title}</p>
               )}
-              <div className="flex items-center justify-center gap-1">
-                <Check size={12} className="text-emerald-500" />
-                <span className="text-[10px] text-zinc-600">Download iniciado!</span>
-              </div>
+              <button
+                onClick={() => triggerDownload(result.videoUrl)}
+                className="w-full h-9 flex items-center justify-center gap-1.5 text-xs font-medium rounded-lg bg-violet-600 hover:bg-violet-500 text-white transition-all"
+              >
+                <Download size={14} /> Baixar vídeo
+              </button>
               {result.audioUrl && (
                 <button
                   onClick={() => {
