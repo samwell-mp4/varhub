@@ -85,7 +85,7 @@ export function Header() {
       })
       if (!res.ok) {
         const txt = await res.text().catch(() => '')
-        throw new Error(`renderer ${res.status}: ${txt.slice(0, 3000)}`)
+        throw new Error(`renderer ${res.status}: ${txt.slice(0, 20000)}`)
       }
       const blob = await res.blob()
       if (timer) clearInterval(timer)

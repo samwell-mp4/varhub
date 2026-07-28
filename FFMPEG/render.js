@@ -169,8 +169,10 @@ export async function renderVideo(project, workDir) {
     }
 
   if (project.category) {
+    const catFile = join(workDir, 'text_cat.txt')
+    await writeFile(catFile, project.category.toUpperCase())
     filterParts.push(
-      `[${lastLabel}]drawtext=text=${escapeText(project.category.toUpperCase())}:` +
+      `[${lastLabel}]drawtext=textfile=${catFile}:` +
       `x=${textX}:y=${textY}:fontsize=18:fontcolor=#a78bfa:fontfile=${fontFile}[cat]`
     )
     lastLabel = 'cat'
@@ -180,8 +182,10 @@ export async function renderVideo(project, workDir) {
   if (project.title) {
     const fontSize = (project.titleSize || 16) * 2.25
     const bold = project.titleBold !== false ? ':fontfile=' + fontFile : ''
+    const titleFile = join(workDir, 'text_title.txt')
+    await writeFile(titleFile, project.title)
     filterParts.push(
-      `[${lastLabel}]drawtext=text=${escapeText(project.title)}:` +
+      `[${lastLabel}]drawtext=textfile=${titleFile}:` +
       `x=${textX}:y=${textY}:fontsize=${Math.round(fontSize)}:fontcolor=${project.titleColor || '#ffffff'}${bold}[title]`
     )
     lastLabel = 'title'
@@ -190,8 +194,10 @@ export async function renderVideo(project, workDir) {
 
   if (project.subtitle) {
     const subSize = (project.subtitleSize || 13) * 2.25
+    const subFile = join(workDir, 'text_sub.txt')
+    await writeFile(subFile, project.subtitle)
     filterParts.push(
-      `[${lastLabel}]drawtext=text=${escapeText(project.subtitle)}:` +
+      `[${lastLabel}]drawtext=textfile=${subFile}:` +
       `x=${textX}:y=${textY}:fontsize=${Math.round(subSize)}:fontcolor=${project.subtitleColor || '#a1a1aa'}[sub]`
     )
     lastLabel = 'sub'
@@ -222,18 +228,6 @@ export async function renderVideo(project, workDir) {
   await ffmpeg(args, workDir)
   const st = await stat(outputPath)
   return { path: outputPath, size: st.size }
-}
-
-function escapeText(t) {
-  return (t || '')
-    .replace(/\\/g, '\\\\')
-    .replace(/'/g, "\\'")
-    .replace(/:/g, '\\:')
-    .replace(/\[/g, '\\[')
-    .replace(/\]/g, '\\]')
-    .replace(/,/g, '\\,')
-    .replace(/;/g, '\\;')
-    .replace(/!/g, '\\!')
 }
 
 function calcHeaderHeight(p) {
