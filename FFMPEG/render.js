@@ -32,6 +32,26 @@ function getDuration(media) {
   return media.duration || 3
 }
 
+function wrapText(text, maxWidthPx, fontSize) {
+  const charWidth = fontSize * 0.6
+  const maxChars = Math.floor(maxWidthPx / charWidth)
+  if (maxChars <= 0 || !text) return text || ''
+  const words = text.split(/\s+/)
+  const lines = []
+  let cur = ''
+  for (const word of words) {
+    const test = cur ? cur + ' ' + word : word
+    if (test.length > maxChars && cur) {
+      lines.push(cur)
+      cur = word
+    } else {
+      cur = test
+    }
+  }
+  if (cur) lines.push(cur)
+  return lines.join('\n')
+}
+
 export async function renderVideo(project, workDir) {
   const bgColor = project.bgColor || '#000000'
   const mediaItems = project.media || []
@@ -183,24 +203,23 @@ export async function renderVideo(project, workDir) {
     const fontSize = Math.round((project.titleSize || 16) * 2.25)
     const bold = project.titleBold !== false ? ':fontfile=' + fontFile : ''
     const titleFile = join(workDir, 'text_title.txt')
-    await writeFile(titleFile, project.title)
+    await writeFile(titleFile, wrapText(project.title, textMaxW, fontSize))
     filterParts.push(
       `[${lastLabel}]drawtext=textfile=${titleFile}:` +
-      `x=${textX}:y=${textY}:fontsize=${fontSize}:fontcolor=${project.titleColor || '#ffffff'}${bold}:` +
-      `text_width=${textMaxW}:wrap_unicode=1[title]`
+      `x=${textX}:y=${textY}:fontsize=${fontSize}:fontcolor=${project.titleColor || '#ffffff'}${bold}[title]`
     )
     lastLabel = 'title'
-    textY += fontSize + 8
+    const lines = project.title ? wrapText(project.title, textMaxW, fontSize).split('\n').length : 1
+    textY += fontSize * lines + 8
   }
 
   if (project.subtitle) {
     const subSize = Math.round((project.subtitleSize || 13) * 2.25)
     const subFile = join(workDir, 'text_sub.txt')
-    await writeFile(subFile, project.subtitle)
+    await writeFile(subFile, wrapText(project.subtitle, textMaxW, subSize))
     filterParts.push(
       `[${lastLabel}]drawtext=textfile=${subFile}:` +
-      `x=${textX}:y=${textY}:fontsize=${subSize}:fontcolor=${project.subtitleColor || '#a1a1aa'}:` +
-      `text_width=${textMaxW}:wrap_unicode=1[sub]`
+      `x=${textX}:y=${textY}:fontsize=${subSize}:fontcolor=${project.subtitleColor || '#a1a1aa'}[sub]`
     )
     lastLabel = 'sub'
   }
