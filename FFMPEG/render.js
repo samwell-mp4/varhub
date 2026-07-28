@@ -243,7 +243,7 @@ export async function renderVideo(project, workDir) {
       )
     }
     lastLabel = `title_${titleLines.length - 1}`
-    textY += fontSize * titleLines.length + 8
+    textY += fontSize * titleLines.length + (titleLines.length - 1) * 12 + 8
   }
 
   if (project.subtitle) {
@@ -295,12 +295,12 @@ function calcHeaderHeight(p) {
   if (p.title) {
     const fontSize = Math.round((p.titleSize || 16) * 2.25)
     const lines = wrapText(p.title, textMaxW, fontSize).split('\n').length
-    textY += fontSize * lines + 8
+    textY += fontSize * lines + (lines - 1) * 12
   }
   if (p.subtitle) {
     const subSize = Math.round((p.subtitleSize || 13) * 2.25)
     const lines = wrapText(p.subtitle, textMaxW, subSize).split('\n').length
-    textY += subSize * lines + 8
+    textY += subSize * lines + (lines - 1) * 12
   }
   return Math.round(Math.max(logoBottom, textY) + 28)
 }
