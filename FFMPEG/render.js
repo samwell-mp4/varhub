@@ -76,8 +76,8 @@ export async function renderVideo(project, workDir) {
   const inputArgs = []
   const inputLabels = []
 
-  const fontBold = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
-  const fontRegular = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
+  const fontBold = '/usr/share/fonts/geist/Geist-Bold.ttf'
+  const fontRegular = '/usr/share/fonts/geist/Geist-Regular.ttf'
   const esc = (s) => s.replace(/\\/g,'\\\\').replace(/:/g,'\\:').replace(/,/g,'\\,').replace(/;/g,'\\;').replace(/\[/g,'\\[').replace(/\]/g,'\\]').replace(/%/g,'\\%')
 
   // --- background ---
