@@ -4,7 +4,15 @@ const store = new Map<string, { data: Buffer; type: string }>()
 
 export function storeVideo(id: string, data: Buffer, type: string) {
   store.set(id, { data, type })
-  setTimeout(() => store.delete(id), 300000)
+  setTimeout(() => store.delete(id), 86400000)
+}
+
+export function listVideos() {
+  return Array.from(store.entries()).map(([id, entry]) => ({
+    id,
+    size: entry.data.length,
+    type: entry.type,
+  }))
 }
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

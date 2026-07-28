@@ -28,19 +28,38 @@ export function FerramentasPanel() {
   const [result, setResult] = useState<{ videoUrl: string; audioUrl: string | null; title: string } | null>(null)
   const detected = url.trim() ? detectPlatform(url) : null
 
-  const triggerDownload = (downloadUrl: string) => {
+  const triggerDownload = async (downloadUrl: string) => {
     if (navigator.share) {
+      const blob = await fetch(downloadUrl).then(r => r.blob()).catch(() => null)
+      if (blob) {
+        const file = new File([blob], 'video.mp4', { type: 'video/mp4' })
+        if (navigator.canShare?.({ files: [file] })) {
+          await navigator.share({ files: [file] }).catch(() => {})
+          return
+        }
+      }
       navigator.share({ url: downloadUrl }).catch(() => {})
       return
     }
-    const a = document.createElement('a')
-    a.href = downloadUrl
-    a.download = 'video.mp4'
-    a.target = '_blank'
-    a.rel = 'noopener noreferrer'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
+    try {
+      const blob = await fetch(downloadUrl).then(r => r.blob())
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'video.mp4'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      setTimeout(() => URL.revokeObjectURL(url), 60000)
+    } catch {
+      const a = document.createElement('a')
+      a.href = downloadUrl
+      a.target = '_blank'
+      a.rel = 'noopener noreferrer'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+    }
   }
 
   const handleDownload = async () => {

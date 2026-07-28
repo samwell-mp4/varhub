@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useProjectStore, useUIStore } from '@/store'
-import { Download, PanelLeftClose, PanelLeft, Save, FolderOpen, Loader2, Clock } from 'lucide-react'
+import { Download, PanelLeftClose, PanelLeft, Save, FolderOpen, Loader2, Clock, History, Trash2, ExternalLink } from 'lucide-react'
 import { exportProject } from '@/lib/export'
 import { saveProjectToFile, loadProjectFromFile } from '@/lib/projectFile'
 import { motion, AnimatePresence } from 'framer-motion'
+
+type HistoryEntry = { id: string; title: string; date: string; url: string }
 
 export function Header() {
   const { project, reset } = useProjectStore()
@@ -13,6 +15,15 @@ export function Header() {
   const [showDuration, setShowDuration] = useState(false)
   const [duration, setDuration] = useState(5)
   const [pendingFormat, setPendingFormat] = useState<'png' | 'jpg' | 'mp4' | null>(null)
+  const [showHistory, setShowHistory] = useState(false)
+  const [history, setHistory] = useState<HistoryEntry[]>([])
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('render-history')
+      if (raw) setHistory(JSON.parse(raw))
+    } catch {}
+  }, [])
 
   const isIOS = typeof navigator !== 'undefined' && !!navigator.share
 
@@ -64,6 +75,17 @@ export function Header() {
         throw new Error(`renderer ${res.status}: ${txt.slice(0, 3000)}`)
       }
       const blob = await res.blob()
+      const form = new FormData()
+      form.set('video', new File([blob], 'video.mp4', { type: 'video/mp4' }))
+      form.set('title', proj.title || 'Untitled')
+      const storeRes = await fetch('/api/store-video', { method: 'POST', body: form }).catch(() => null)
+      if (storeRes?.ok) {
+        const data = await storeRes.json()
+        const entry: HistoryEntry = { id: data.id, title: data.title, date: new Date().toISOString(), url: data.url }
+        const updated = [entry, ...history.filter(h => h.id !== data.id)].slice(0, 20)
+        setHistory(updated)
+        localStorage.setItem('render-history', JSON.stringify(updated))
+      }
       if (navigator.share && navigator.canShare) {
         const file = new File([blob], 'video.mp4', { type: 'video/mp4' })
         if (navigator.canShare({ files: [file] })) {
@@ -159,6 +181,71 @@ export function Header() {
           <Save size={14} />
           Salvar
         </button>
+        <div className="relative">
+          <button
+            onClick={() => setShowHistory(!showHistory)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-zinc-200 bg-white/5 hover:bg-white/10 rounded-lg transition-all"
+            title="Histórico de renders"
+          >
+            <History size={14} />
+            {history.length > 0 && <span className="text-[10px] text-violet-400">{history.length}</span>}
+          </button>
+          {showHistory && (
+            <div className="absolute right-0 top-full mt-1 w-72 bg-[#13131a] border border-[#1a1a28] rounded-lg shadow-xl z-50 max-h-80 overflow-y-auto">
+              <div className="flex items-center justify-between px-3 py-2 border-b border-[#1a1a28]">
+                <span className="text-[10px] text-zinc-600 font-medium uppercase">Histórico</span>
+                {history.length > 0 && (
+                  <button
+                    onClick={() => { setHistory([]); localStorage.removeItem('render-history'); setShowHistory(false) }}
+                    className="text-[10px] text-red-400 hover:text-red-300 flex items-center gap-1"
+                  >
+                    <Trash2 size={10} /> Limpar
+                  </button>
+                )}
+              </div>
+              {history.length === 0 ? (
+                <p className="text-xs text-zinc-600 text-center py-6">Nenhum vídeo exportado ainda</p>
+              ) : (
+                history.map(entry => (
+                  <div key={entry.id} className="flex items-center gap-2 px-3 py-2.5 hover:bg-white/5 transition-all border-b border-[#1a1a28]/50 last:border-0">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-zinc-300 truncate">{entry.title}</p>
+                      <p className="text-[10px] text-zinc-600">{new Date(entry.date).toLocaleString('pt-BR')}</p>
+                    </div>
+                    <a
+                      href={entry.url}
+                      download
+                      onClick={(e) => { e.stopPropagation() }}
+                      className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-white/10 transition-all"
+                      title="Baixar"
+                    >
+                      <Download size={14} />
+                    </a>
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation()
+                        try {
+                          await navigator.clipboard.writeText(window.location.origin + entry.url)
+                        } catch {
+                          const input = document.createElement('input')
+                          input.value = window.location.origin + entry.url
+                          document.body.appendChild(input)
+                          input.select()
+                          document.execCommand('copy')
+                          document.body.removeChild(input)
+                        }
+                      }}
+                      className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-white/10 transition-all"
+                      title="Copiar link"
+                    >
+                      <ExternalLink size={14} />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
         <div className="w-px h-5 bg-[#1a1a28]" />
         <div className="relative group">
           <button
