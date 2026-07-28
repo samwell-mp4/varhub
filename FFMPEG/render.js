@@ -33,7 +33,16 @@ function getDuration(media) {
   return media.duration || 3
 }
 
+function cleanText(text) {
+  return text
+    .replace(/\r/g, '')
+    .replace(/\u2028/g, '')
+    .replace(/\u2029/g, '')
+    .replace(/\u00A0/g, ' ')
+}
+
 function wrapText(text, maxWidthPx, fontSize) {
+  text = cleanText(text)
   const charWidth = fontSize * 0.6
   const maxChars = Math.floor(maxWidthPx / charWidth)
   if (maxChars <= 0 || !text) return text || ''
@@ -222,7 +231,7 @@ export async function renderVideo(project, workDir) {
   if (project.category) {
     filterParts.push(
       `[${lastLabel}]drawtext=text=${escapeDrawtext(project.category.toUpperCase())}:` +
-      `x=${textX}:y=${textY}:fontsize=18:fontcolor=#a78bfa:fontfile=${fontRegular}[cat]`
+      `x=${textX}:y=${textY}:fontsize=18:fontcolor=#a78bfa:fontfile=${fontRegular}:line_spacing=8[cat]`
     )
     lastLabel = 'cat'
     textY += 26
@@ -233,7 +242,7 @@ export async function renderVideo(project, workDir) {
     const bold = project.titleBold !== false ? ':fontfile=' + fontBold : ':fontfile=' + fontRegular
     filterParts.push(
       `[${lastLabel}]drawtext=text=${escapeDrawtext(wrapText(project.title, textMaxW, fontSize))}:` +
-      `x=${textX}:y=${textY}:fontsize=${fontSize}:fontcolor=${project.titleColor || '#ffffff'}${bold}[title]`
+      `x=${textX}:y=${textY}:fontsize=${fontSize}:fontcolor=${project.titleColor || '#ffffff'}${bold}:line_spacing=10[title]`
     )
     lastLabel = 'title'
     const lines = project.title ? wrapText(project.title, textMaxW, fontSize).split('\n').length : 1
@@ -245,7 +254,7 @@ export async function renderVideo(project, workDir) {
     const subBold = project.subtitleBold ? ':fontfile=' + fontBold : ':fontfile=' + fontRegular
     filterParts.push(
       `[${lastLabel}]drawtext=text=${escapeDrawtext(wrapText(project.subtitle, textMaxW, subSize))}:` +
-      `x=${textX}:y=${textY}:fontsize=${subSize}:fontcolor=${project.subtitleColor || '#a1a1aa'}${subBold}[sub]`
+      `x=${textX}:y=${textY}:fontsize=${subSize}:fontcolor=${project.subtitleColor || '#a1a1aa'}${subBold}:line_spacing=8[sub]`
     )
     lastLabel = 'sub'
   }
