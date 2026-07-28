@@ -203,27 +203,55 @@ async function facebookDownload(url: string) {
 }
 
 async function tiktokDownload(url: string) {
-  const body = new URLSearchParams({ url, hd: '1' })
-  try {
-    const res = await fetch('https://www.tikwm.com/api/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'User-Agent': 'Mozilla/5.0',
-        'Accept': 'application/json',
-      },
-      body: body.toString(),
-      signal: AbortSignal.timeout(12000),
-    })
-    const data = await res.json()
-    if (data.code === 0) {
-      return {
-        videoUrl: data.data.hdplay || data.data.play || null,
-        audioUrl: data.data.music || null,
-        title: data.data.title || '',
+  const methods = [
+    async () => {
+      const body = new URLSearchParams({ url, hd: '1' })
+      const res = await fetch('https://www.tikwm.com/api/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' },
+        body: body.toString(),
+        signal: AbortSignal.timeout(8000),
+      })
+      const data = await res.json()
+      if (data.code === 0 && (data.data?.hdplay || data.data?.play)) {
+        return { videoUrl: data.data.hdplay || data.data.play, audioUrl: data.data.music || null, title: data.data.title || '' }
       }
-    }
-  } catch {}
+      return null
+    },
+    async () => {
+      const html = await fetchUrl(`https://api.vevioz.com/api/button/tiktok/${encodeURIComponent(url)}`, 8000)
+      if (!html) return null
+      const video = extractVideoUrl(html)
+      if (video) return { videoUrl: video, audioUrl: null, title: '' }
+      const a = html.match(/href="([^"]+\.mp4[^"]*)"/)
+      if (a) return { videoUrl: a[1].startsWith('http') ? a[1] : `https:${a[1]}`, audioUrl: null, title: '' }
+      return null
+    },
+    async () => {
+      const html = await fetchUrl(url, 8000)
+      if (!html) return null
+      const scripts = html.match(/<script[^>]*id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/)
+      if (scripts) {
+        try {
+          const data = JSON.parse(scripts[1])
+          const vu = data?.props?.pageProps?.videoData?.videoUrl || data?.props?.pageProps?.itemInfo?.itemStruct?.video?.playAddr?.[0]?.src
+          if (vu) return { videoUrl: vu, audioUrl: null, title: data?.props?.pageProps?.videoData?.title || '' }
+        } catch {}
+      }
+      const og = html.match(/<meta\s+property="og:video"\s+content="([^"]+)"/i)
+      if (og) return { videoUrl: og[1], audioUrl: null, title: '' }
+      const src = html.match(/<video[^>]*src="([^"]+)"/i)
+      if (src) return { videoUrl: src[1], audioUrl: null, title: '' }
+      return null
+    },
+  ]
+
+  for (const m of methods) {
+    try {
+      const r = await m()
+      if (r?.videoUrl) return r
+    } catch {}
+  }
   return null
 }
 
