@@ -35,14 +35,17 @@ function getDuration(media) {
 
 function cleanText(text) {
   return text
+    .normalize('NFC')
     .replace(/\r/g, '')
-    .replace(/\u2028/g, '')
-    .replace(/\u2029/g, '')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/[\u2028\u2029]/g, '')
     .replace(/\u00A0/g, ' ')
+    .replace(/[^\P{C}\n]/gu, '')
+    .trim()
 }
 
 function wrapText(text, maxWidthPx, fontSize) {
-  text = cleanText(text)
+  text = cleanText(text).replace(/\n/g, ' ')
   const charWidth = fontSize * 0.55
   const maxChars = Math.floor(maxWidthPx / charWidth)
   if (maxChars <= 0 || !text) return text || ''
