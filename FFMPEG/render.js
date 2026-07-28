@@ -7,6 +7,7 @@ const H = 1350
 const FPS = 30
 const PAD = 32
 const LOGO_SIZE = 44
+const textMaxW = W - PAD - LOGO_SIZE - 16 - PAD
 
 function ffmpeg(args, cwd) {
   const cmd = process.env.FFMPEG_PATH || 'ffmpeg'
@@ -117,8 +118,8 @@ export async function renderVideo(project, workDir) {
 
     const targetW = Math.round(sw * scale)
     const targetH = Math.round(sh * scale)
-    const cropX = Math.round(Math.max(0, (targetW - sw) / 2 + panX))
-    const cropY = Math.round(Math.max(0, (targetH - sh) / 2 + panY))
+    const cropX = Math.round(Math.max(0, (targetW - sw) / 2 - panX))
+    const cropY = Math.round(Math.max(0, (targetH - sh) / 2 - panY))
     const cropW = Math.min(sw, targetW)
     const cropH = Math.min(sh, targetH)
 
@@ -172,7 +173,6 @@ export async function renderVideo(project, workDir) {
   // --- header text (title + subtitle) ---
   let textY = Math.round(PAD + 4)
   const textX = Math.round(PAD + LOGO_SIZE + 16)
-  const textMaxW = W - PAD - LOGO_SIZE - 16 - PAD
 
     if (project.logo && project.logo.startsWith('data:')) {
       const mime = project.logo.match(/^data:image\/(\w+);/)
@@ -252,13 +252,20 @@ export async function renderVideo(project, workDir) {
 }
 
 function calcHeaderHeight(p) {
-  const fs = p.titleSize || 16
-  const tSize = fs * 2.25
-  let h = PAD
-  if (p.category) h += 22
-  h += tSize + 8
-  if (p.subtitle) h += (p.subtitleSize || 13) * 2.25 + 8
-  return Math.round(h + PAD)
+  const logoBottom = PAD + LOGO_SIZE
+  let textY = PAD + 4
+  if (p.category) textY += 26
+  if (p.title) {
+    const fontSize = Math.round((p.titleSize || 16) * 2.25)
+    const lines = wrapText(p.title, textMaxW, fontSize).split('\n').length
+    textY += fontSize * lines + 8
+  }
+  if (p.subtitle) {
+    const subSize = Math.round((p.subtitleSize || 13) * 2.25)
+    const lines = wrapText(p.subtitle, textMaxW, subSize).split('\n').length
+    textY += subSize * lines + 8
+  }
+  return Math.round(Math.max(logoBottom, textY) + 8)
 }
 
 function getSlot(templateId, idx) {
