@@ -3,7 +3,7 @@ import { writeFile, stat } from 'fs/promises'
 import { join, extname } from 'path'
 
 const W = 1080
-const H = 1920
+const H = 1350
 const FPS = 30
 const PAD = 32
 const LOGO_SIZE = 44
@@ -85,7 +85,7 @@ export async function renderVideo(project, workDir) {
     const fpsFilter = `fps=${FPS},`
 
     // scale + crop to slot (cover mode)
-    const slot = getSlot(project, i)
+    const slot = getSlot(project.templateId || 5, i)
     const sx = Math.round((slot.x / 100) * W)
     const sy = Math.round(headerH + (slot.y / 100) * mediaArea)
     const sw = Math.round((slot.width / 100) * W)
@@ -186,7 +186,8 @@ export async function renderVideo(project, workDir) {
     await writeFile(titleFile, project.title)
     filterParts.push(
       `[${lastLabel}]drawtext=textfile=${titleFile}:` +
-      `x=${textX}:y=${textY}:fontsize=${fontSize}:fontcolor=${project.titleColor || '#ffffff'}${bold}[title]`
+      `x=${textX}:y=${textY}:fontsize=${fontSize}:fontcolor=${project.titleColor || '#ffffff'}${bold}:` +
+      `text_width=${textMaxW}:wrap_unicode=1[title]`
     )
     lastLabel = 'title'
     textY += fontSize + 8
@@ -198,7 +199,8 @@ export async function renderVideo(project, workDir) {
     await writeFile(subFile, project.subtitle)
     filterParts.push(
       `[${lastLabel}]drawtext=textfile=${subFile}:` +
-      `x=${textX}:y=${textY}:fontsize=${subSize}:fontcolor=${project.subtitleColor || '#a1a1aa'}[sub]`
+      `x=${textX}:y=${textY}:fontsize=${subSize}:fontcolor=${project.subtitleColor || '#a1a1aa'}:` +
+      `text_width=${textMaxW}:wrap_unicode=1[sub]`
     )
     lastLabel = 'sub'
   }
@@ -240,31 +242,97 @@ function calcHeaderHeight(p) {
   return Math.round(h + PAD)
 }
 
-function getSlot(project, idx) {
+function getSlot(templateId, idx) {
   const TEMPLATES = [
-    { id: 0, slots: [{ x: 0, y: 0, width: 100, height: 100 }] },
-    { id: 1, slots: [
-      { x: 0, y: 0, width: 50, height: 50 },
-      { x: 50, y: 0, width: 50, height: 50 },
-      { x: 0, y: 50, width: 50, height: 50 },
-      { x: 50, y: 50, width: 50, height: 50 },
-    ]},
-    { id: 2, slots: [
-      { x: 0, y: 0, width: 60, height: 100 },
-      { x: 60, y: 0, width: 40, height: 50 },
-      { x: 60, y: 50, width: 40, height: 50 },
-    ]},
-    { id: 3, slots: [
-      { x: 0, y: 0, width: 100, height: 60 },
-      { x: 0, y: 60, width: 50, height: 40 },
-      { x: 50, y: 60, width: 50, height: 40 },
-    ]},
-    { id: 4, slots: [
-      { x: 0, y: 0, width: 100, height: 70 },
-      { x: 0, y: 70, width: 100, height: 30 },
-    ]},
-    { id: 5, slots: [{ x: 0, y: 0, width: 100, height: 100 }] },
+    {
+      id: 1,
+      slots: [
+        { x: 0, y: 0, width: 50, height: 100, label: 'Imagem 1' },
+        { x: 50, y: 0, width: 50, height: 100, label: 'Imagem 2' },
+      ],
+    },
+    {
+      id: 2,
+      slots: [
+        { x: 0, y: 0, width: 50, height: 100, label: 'Mídia 1' },
+        { x: 50, y: 0, width: 50, height: 100, label: 'Mídia 2' },
+      ],
+    },
+    {
+      id: 3,
+      slots: [
+        { x: 0, y: 0, width: 100, height: 100, label: 'Mídia' },
+      ],
+    },
+    {
+      id: 4,
+      slots: [
+        { x: 0, y: 0, width: 33.33, height: 100, label: 'Imagem 1' },
+        { x: 33.33, y: 0, width: 33.33, height: 100, label: 'Imagem 2' },
+        { x: 66.66, y: 0, width: 33.33, height: 100, label: 'Imagem 3' },
+      ],
+    },
+    {
+      id: 5,
+      slots: [
+        { x: 0, y: 0, width: 100, height: 66, label: 'Imagem Grande' },
+        { x: 0, y: 66, width: 50, height: 34, label: 'Imagem 2' },
+        { x: 50, y: 66, width: 50, height: 34, label: 'Imagem 3' },
+      ],
+    },
+    {
+      id: 6,
+      slots: [
+        { x: 0, y: 0, width: 100, height: 66, label: 'Vídeo' },
+        { x: 0, y: 66, width: 100, height: 34, label: 'Imagem' },
+      ],
+    },
+    {
+      id: 7,
+      slots: [
+        { x: 8, y: 0, width: 84, height: 100, label: 'Imagem' },
+      ],
+    },
+    {
+      id: 8,
+      slots: [
+        { x: 0, y: 0, width: 50, height: 50, label: '1' },
+        { x: 50, y: 0, width: 50, height: 50, label: '2' },
+        { x: 0, y: 50, width: 50, height: 50, label: '3' },
+        { x: 50, y: 50, width: 50, height: 50, label: '4' },
+      ],
+    },
+    {
+      id: 9,
+      slots: [
+        { x: 0, y: 0, width: 100, height: 50, label: 'Mídia 1' },
+        { x: 0, y: 50, width: 100, height: 50, label: 'Mídia 2' },
+      ],
+    },
+    {
+      id: 10,
+      slots: [
+        { x: 0, y: 0, width: 66, height: 100, label: 'Destaque' },
+        { x: 66, y: 0, width: 34, height: 50, label: '2' },
+        { x: 66, y: 50, width: 34, height: 50, label: '3' },
+      ],
+    },
+    {
+      id: 11,
+      slots: [
+        { x: 0, y: 0, width: 100, height: 33.33, label: 'Imagem 1' },
+        { x: 0, y: 33.33, width: 100, height: 33.33, label: 'Imagem 2' },
+        { x: 0, y: 66.66, width: 100, height: 33.33, label: 'Imagem 3' },
+      ],
+    },
+    {
+      id: 12,
+      slots: [
+        { x: 0, y: 15, width: 100, height: 70, label: 'Mídia' },
+      ],
+    },
   ]
-  const t = TEMPLATES.find(t => t.id === project.templateId) || TEMPLATES[5]
+  const t = TEMPLATES.find(t => t.id === templateId)
+  if (!t) return { x: 0, y: 0, width: 100, height: 100 }
   return t.slots[idx] || { x: 0, y: 0, width: 100, height: 100 }
 }

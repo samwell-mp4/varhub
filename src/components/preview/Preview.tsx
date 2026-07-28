@@ -15,7 +15,7 @@ export function Preview() {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3 }}
-        className={`relative w-full rounded-2xl overflow-hidden shadow-2xl bg-black ${isMobile ? 'max-w-[360px] aspect-[9/16]' : 'max-w-[420px] aspect-[9/16]'}`}>
+        className={`relative w-full rounded-2xl overflow-hidden shadow-2xl bg-black ${isMobile ? 'max-w-[320px] aspect-[4/5]' : 'max-w-[420px] aspect-[4/5]'}`}>
         <AutoTemplate
           media={project.media}
           templateId={project.templateId}

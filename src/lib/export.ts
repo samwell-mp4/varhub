@@ -2,7 +2,7 @@ import { Project, ExportFormat } from '@/types'
 import { TEMPLATES } from './autoLayout'
 
 const WIDTH = 1080
-const HEIGHT = 1920
+const HEIGHT = 1350
 const FPS = 30
 
 const PAD = 32

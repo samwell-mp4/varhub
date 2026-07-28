@@ -13,7 +13,7 @@ interface MobileTemplatePickerProps {
 
 function MiniPreview({ slots }: { slots: { x: number; y: number; width: number; height: number }[] }) {
   return (
-    <div className="w-full aspect-[9/16] rounded-xl bg-zinc-800/80 relative overflow-hidden ring-1 ring-white/5">
+    <div className="w-full aspect-[4/5] rounded-xl bg-zinc-800/80 relative overflow-hidden ring-1 ring-white/5">
       {slots.map((slot, i) => (
         <div
           key={i}
