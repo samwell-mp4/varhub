@@ -88,7 +88,7 @@ export function Header() {
   const handleExport = async (format: 'png' | 'jpg' | 'mp4') => {
     if (isExporting) return
 
-    if (format === 'mp4' && isIOS) {
+    if (format === 'mp4') {
       const hasOnlyImages = project.media.length > 0 && project.media.every(m => m.type === 'image')
       if (hasOnlyImages) {
         setPendingFormat(format)
@@ -96,13 +96,6 @@ export function Header() {
         return
       }
       await serverExport()
-      return
-    }
-
-    const hasOnlyImages = project.media.length > 0 && project.media.every(m => m.type === 'image')
-    if (format === 'mp4' && hasOnlyImages) {
-      setPendingFormat(format)
-      setShowDuration(true)
       return
     }
 
@@ -119,17 +112,7 @@ export function Header() {
     setShowDuration(false)
     const format = pendingFormat!
     setPendingFormat(null)
-    if (format === 'mp4' && isIOS) {
-      await serverExport(duration)
-      return
-    }
-    setExporting(true, `Exportando ${format.toUpperCase()}...`)
-    try {
-      await exportProject(project, format, (msg) => setExporting(true, msg), duration)
-    } catch (e) {
-      console.error(e)
-    }
-    setExporting(false)
+    await serverExport(duration)
   }
 
   const handleSave = () => {
