@@ -12,11 +12,15 @@ function ffmpeg(args, cwd) {
   const cmd = process.env.FFMPEG_PATH || 'ffmpeg'
   return new Promise((resolve, reject) => {
     const proc = spawn(cmd, args, { cwd, stdio: ['ignore', 'pipe', 'pipe'] })
+    let stdout = ''
     let stderr = ''
+    proc.stdout.on('data', (d) => { stdout += d.toString() })
     proc.stderr.on('data', (d) => { stderr += d.toString() })
     proc.on('close', (code) => {
       if (code === 0) resolve()
-      else reject(new Error(`ffmpeg exited ${code}:\nHEAD:\n${stderr.slice(0, 1000)}\nTAIL:\n${stderr.slice(-2000)}`))
+      else reject(new Error(
+        `ffmpeg ${code}\nARGS:${JSON.stringify(args).slice(0, 2000)}\nSTDERR:${stderr.slice(-3000)}`
+      ))
     })
     proc.on('error', reject)
   })
