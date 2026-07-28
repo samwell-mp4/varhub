@@ -11,6 +11,13 @@ const PORT = process.env.PORT || 3001
 const SECRET = process.env.RENDER_SECRET || 'changeme'
 
 app.use(express.json({ limit: '500mb' }))
+app.use((_req, res, next) => {
+  res.set('Access-Control-Allow-Origin', '*')
+  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+  res.set('Access-Control-Allow-Headers', 'x-secret, content-type')
+  if (_req.method === 'OPTIONS') return res.sendStatus(204)
+  next()
+})
 
 const upload = multer({
   storage: multer.memoryStorage(),

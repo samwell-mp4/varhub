@@ -28,26 +28,30 @@ export function Header() {
           }
         }
       }
-      const res = await fetch('/api/render-project', {
+      const rendererUrl = process.env.NEXT_PUBLIC_RENDERER_URL || 'https://var-hub-ffmpeg.hx8235.easypanel.host'
+      const renderSecret = process.env.NEXT_PUBLIC_RENDER_SECRET || 'changeme'
+      const res = await fetch(`${rendererUrl}/render`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-secret': renderSecret },
         body: JSON.stringify({ project: proj }),
       })
-      const data = await res.json()
-      if (!res.ok || !data.videoUrl) {
-        throw new Error(data.error || 'render failed')
+      if (!res.ok) throw new Error(`renderer: ${res.status}`)
+      const blob = await res.blob()
+      if (navigator.share && navigator.canShare) {
+        const file = new File([blob], 'video.mp4', { type: 'video/mp4' })
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file] }).catch(() => {})
+          return
+        }
       }
-      const dlUrl = `${window.location.origin}${data.videoUrl}`
-      if (navigator.share) {
-        await navigator.share({ url: dlUrl }).catch(() => {})
-      } else {
-        const a = document.createElement('a')
-        a.href = dlUrl
-        a.download = 'video.mp4'
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-      }
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'video.mp4'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
     } catch (e) {
       console.error(e)
     }
