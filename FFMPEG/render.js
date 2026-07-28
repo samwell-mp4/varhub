@@ -6,7 +6,7 @@ const W = 1080
 const H = 1350
 const FPS = 30
 const PAD = 32
-const LOGO_SIZE = 44
+const LOGO_SIZE = 64
 const textMaxW = W - PAD - LOGO_SIZE - 16 - PAD
 
 function ffmpeg(args, cwd) {
@@ -43,7 +43,7 @@ function cleanText(text) {
 
 function wrapText(text, maxWidthPx, fontSize) {
   text = cleanText(text)
-  const charWidth = fontSize * 0.6
+  const charWidth = fontSize * 0.55
   const maxChars = Math.floor(maxWidthPx / charWidth)
   if (maxChars <= 0 || !text) return text || ''
   const words = text.split(/\s+/)
@@ -60,19 +60,6 @@ function wrapText(text, maxWidthPx, fontSize) {
   }
   if (cur) lines.push(cur)
   return lines.join('\n')
-}
-
-function escapeDrawtext(text) {
-  return text
-    .replace(/\\/g, '\\\\')
-    .replace(/:/g, '\\:')
-    .replace(/,/g, '\\,')
-    .replace(/;/g, '\\;')
-    .replace(/'/g, "\\'")
-    .replace(/\[/g, '\\[')
-    .replace(/\]/g, '\\]')
-    .replace(/%/g, '\\%')
-    .replace(/\n/g, '\\n')
 }
 
 export async function renderVideo(project, workDir) {
@@ -229,9 +216,11 @@ export async function renderVideo(project, workDir) {
     }
 
   if (project.category) {
+    const catFile = join(workDir, 'text_cat.txt')
+    await writeFile(catFile, cleanText(project.category.toUpperCase()), 'utf8')
     filterParts.push(
-      `[${lastLabel}]drawtext=text=${escapeDrawtext(project.category.toUpperCase())}:` +
-      `x=${textX}:y=${textY}:fontsize=18:fontcolor=#a78bfa:fontfile=${fontRegular}:line_spacing=8[cat]`
+      `[${lastLabel}]drawtext=textfile=${catFile}:` +
+      `x=${textX}:y=${textY}:fontsize=18:fontcolor=#a78bfa:fontfile=${fontRegular}:line_spacing=8:text_encoding=utf-8:fix_bounds=1[cat]`
     )
     lastLabel = 'cat'
     textY += 26
@@ -240,9 +229,11 @@ export async function renderVideo(project, workDir) {
   if (project.title) {
     const fontSize = Math.round((project.titleSize || 16) * 2.25)
     const bold = project.titleBold !== false ? ':fontfile=' + fontBold : ':fontfile=' + fontRegular
+    const titleFile = join(workDir, 'text_title.txt')
+    await writeFile(titleFile, wrapText(project.title, textMaxW, fontSize), 'utf8')
     filterParts.push(
-      `[${lastLabel}]drawtext=text=${escapeDrawtext(wrapText(project.title, textMaxW, fontSize))}:` +
-      `x=${textX}:y=${textY}:fontsize=${fontSize}:fontcolor=${project.titleColor || '#ffffff'}${bold}:line_spacing=10[title]`
+      `[${lastLabel}]drawtext=textfile=${titleFile}:` +
+      `x=${textX}:y=${textY}:fontsize=${fontSize}:fontcolor=${project.titleColor || '#ffffff'}${bold}:line_spacing=12:text_encoding=utf-8:fix_bounds=1[title]`
     )
     lastLabel = 'title'
     const lines = project.title ? wrapText(project.title, textMaxW, fontSize).split('\n').length : 1
@@ -252,9 +243,11 @@ export async function renderVideo(project, workDir) {
   if (project.subtitle) {
     const subSize = Math.round((project.subtitleSize || 13) * 2.25)
     const subBold = project.subtitleBold ? ':fontfile=' + fontBold : ':fontfile=' + fontRegular
+    const subFile = join(workDir, 'text_sub.txt')
+    await writeFile(subFile, wrapText(project.subtitle, textMaxW, subSize), 'utf8')
     filterParts.push(
-      `[${lastLabel}]drawtext=text=${escapeDrawtext(wrapText(project.subtitle, textMaxW, subSize))}:` +
-      `x=${textX}:y=${textY}:fontsize=${subSize}:fontcolor=${project.subtitleColor || '#a1a1aa'}${subBold}:line_spacing=8[sub]`
+      `[${lastLabel}]drawtext=textfile=${subFile}:` +
+      `x=${textX}:y=${textY}:fontsize=${subSize}:fontcolor=${project.subtitleColor || '#a1a1aa'}${subBold}:line_spacing=12:text_encoding=utf-8:fix_bounds=1[sub]`
     )
     lastLabel = 'sub'
   }
