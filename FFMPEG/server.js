@@ -73,5 +73,5 @@ app.post('/render', (req, res, next) => {
 })
 
 app.listen(PORT, () => {
-  console.log(`FFmpeg renderer listening on port ${PORT}`)
+  console.log(`FFmpeg renderer v2 listening on port ${PORT}`)
 })
