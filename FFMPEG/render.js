@@ -62,7 +62,7 @@ function wrapText(text, maxWidthPx, fontSize) {
     }
   }
   if (cur) lines.push(cur)
-  return lines.join('\r\n')
+  return lines.join('\n')
 }
 
 export async function renderVideo(project, workDir) {
@@ -78,6 +78,7 @@ export async function renderVideo(project, workDir) {
 
   const fontBold = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
   const fontRegular = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
+  const esc = (s) => s.replace(/\\/g,'\\\\').replace(/:/g,'\\:').replace(/,/g,'\\,').replace(/;/g,'\\;').replace(/\[/g,'\\[').replace(/\]/g,'\\]').replace(/%/g,'\\%')
 
   // --- background ---
   filterParts.push(`color=c=${bgColor}:s=${W}x${H}:r=${FPS}[bg]`)
@@ -232,27 +233,32 @@ export async function renderVideo(project, workDir) {
   if (project.title) {
     const fontSize = Math.round((project.titleSize || 16) * 2.25)
     const bold = project.titleBold !== false ? ':fontfile=' + fontBold : ':fontfile=' + fontRegular
-    const titleFile = join(workDir, 'text_title.txt')
-    await writeFile(titleFile, wrapText(project.title, textMaxW, fontSize), 'utf8')
-    filterParts.push(
-      `[${lastLabel}]drawtext=textfile=${titleFile}:` +
-      `x=${textX}:y=${textY}:fontsize=${fontSize}:fontcolor=${project.titleColor || '#ffffff'}${bold}:line_spacing=12[title]`
-    )
-    lastLabel = 'title'
-    const lines = project.title ? wrapText(project.title, textMaxW, fontSize).split('\n').length : 1
-    textY += fontSize * lines + 8
+    const titleLines = wrapText(project.title, textMaxW, fontSize).split('\n')
+    for (let i = 0; i < titleLines.length; i++) {
+      const lineLabel = i === 0 ? 'title' : `title_${i}`
+      const prev = i === 0 ? lastLabel : `title_${i - 1}`
+      const lineY = textY + i * (fontSize + 12)
+      filterParts.push(
+        `[${prev}]drawtext=text=${esc(titleLines[i])}:x=${textX}:y=${lineY}:fontsize=${fontSize}:fontcolor=${project.titleColor || '#ffffff'}${bold}[${lineLabel}]`
+      )
+    }
+    lastLabel = `title_${titleLines.length - 1}`
+    textY += fontSize * titleLines.length + 8
   }
 
   if (project.subtitle) {
     const subSize = Math.round((project.subtitleSize || 13) * 2.25)
     const subBold = project.subtitleBold ? ':fontfile=' + fontBold : ':fontfile=' + fontRegular
-    const subFile = join(workDir, 'text_sub.txt')
-    await writeFile(subFile, wrapText(project.subtitle, textMaxW, subSize), 'utf8')
-    filterParts.push(
-      `[${lastLabel}]drawtext=textfile=${subFile}:` +
-      `x=${textX}:y=${textY}:fontsize=${subSize}:fontcolor=${project.subtitleColor || '#a1a1aa'}${subBold}:line_spacing=12[sub]`
-    )
-    lastLabel = 'sub'
+    const subLines = wrapText(project.subtitle, textMaxW, subSize).split('\n')
+    for (let i = 0; i < subLines.length; i++) {
+      const lineLabel = i === 0 ? 'sub' : `sub_${i}`
+      const prev = i === 0 ? lastLabel : `sub_${i - 1}`
+      const lineY = textY + i * (subSize + 12)
+      filterParts.push(
+        `[${prev}]drawtext=text=${esc(subLines[i])}:x=${textX}:y=${lineY}:fontsize=${subSize}:fontcolor=${project.subtitleColor || '#a1a1aa'}${subBold}[${lineLabel}]`
+      )
+    }
+    lastLabel = `sub_${subLines.length - 1}`
   }
 
   // --- output ---
