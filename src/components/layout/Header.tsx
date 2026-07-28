@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useProjectStore, useUIStore } from '@/store'
-import { Download, PanelLeftClose, PanelLeft, Save, FolderOpen, Loader2, Clock, History, Trash2, ExternalLink } from 'lucide-react'
+import { Download, PanelLeftClose, PanelLeft, Save, FolderOpen, Loader2, Clock, History, Trash2 } from 'lucide-react'
 import { exportProject } from '@/lib/export'
 import { saveProjectToFile, loadProjectFromFile } from '@/lib/projectFile'
+import { saveVideo, listVideos, getVideo, deleteVideo, clearVideos } from '@/lib/videoStore'
 import { motion, AnimatePresence } from 'framer-motion'
 
-type HistoryEntry = { id: string; title: string; date: string; url: string }
+type HistoryEntry = { id: string; title: string; date: string }
 
 export function Header() {
   const { project, reset } = useProjectStore()
@@ -19,10 +20,7 @@ export function Header() {
   const [history, setHistory] = useState<HistoryEntry[]>([])
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('render-history')
-      if (raw) setHistory(JSON.parse(raw))
-    } catch {}
+    listVideos().then(setHistory).catch(() => {})
   }, [])
 
   const isIOS = typeof navigator !== 'undefined' && !!navigator.share
@@ -75,17 +73,11 @@ export function Header() {
         throw new Error(`renderer ${res.status}: ${txt.slice(0, 3000)}`)
       }
       const blob = await res.blob()
-      const form = new FormData()
-      form.set('video', new File([blob], 'video.mp4', { type: 'video/mp4' }))
-      form.set('title', proj.title || 'Untitled')
-      const storeRes = await fetch('/api/store-video', { method: 'POST', body: form }).catch(() => null)
-      if (storeRes?.ok) {
-        const data = await storeRes.json()
-        const entry: HistoryEntry = { id: data.id, title: data.title, date: new Date().toISOString(), url: data.url }
-        const updated = [entry, ...history.filter(h => h.id !== data.id)].slice(0, 20)
-        setHistory(updated)
-        localStorage.setItem('render-history', JSON.stringify(updated))
-      }
+      const id = Math.random().toString(36).slice(2)
+      await saveVideo(id, blob, proj.title || 'Untitled').catch(() => {})
+      const entry: HistoryEntry = { id, title: proj.title || 'Untitled', date: new Date().toISOString() }
+      const updated = [entry, ...history.filter(h => h.id !== id)].slice(0, 20)
+      setHistory(updated)
       if (navigator.share && navigator.canShare) {
         const file = new File([blob], 'video.mp4', { type: 'video/mp4' })
         if (navigator.canShare({ files: [file] })) {
@@ -100,7 +92,7 @@ export function Header() {
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      setTimeout(() => URL.revokeObjectURL(url), 60000)
     } catch (e) {
       console.error(e)
     }
@@ -196,7 +188,7 @@ export function Header() {
                 <span className="text-[10px] text-zinc-600 font-medium uppercase">Histórico</span>
                 {history.length > 0 && (
                   <button
-                    onClick={() => { setHistory([]); localStorage.removeItem('render-history'); setShowHistory(false) }}
+                    onClick={() => { clearVideos(); setHistory([]); setShowHistory(false) }}
                     className="text-[10px] text-red-400 hover:text-red-300 flex items-center gap-1"
                   >
                     <Trash2 size={10} /> Limpar
@@ -212,33 +204,35 @@ export function Header() {
                       <p className="text-xs text-zinc-300 truncate">{entry.title}</p>
                       <p className="text-[10px] text-zinc-600">{new Date(entry.date).toLocaleString('pt-BR')}</p>
                     </div>
-                    <a
-                      href={entry.url}
-                      download
-                      onClick={(e) => { e.stopPropagation() }}
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation()
+                        const blob = await getVideo(entry.id)
+                        if (!blob) return
+                        const url = URL.createObjectURL(blob)
+                        const a = document.createElement('a')
+                        a.href = url
+                        a.download = 'video.mp4'
+                        document.body.appendChild(a)
+                        a.click()
+                        document.body.removeChild(a)
+                        setTimeout(() => URL.revokeObjectURL(url), 60000)
+                      }}
                       className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-white/10 transition-all"
                       title="Baixar"
                     >
                       <Download size={14} />
-                    </a>
+                    </button>
                     <button
                       onClick={async (e) => {
                         e.stopPropagation()
-                        try {
-                          await navigator.clipboard.writeText(window.location.origin + entry.url)
-                        } catch {
-                          const input = document.createElement('input')
-                          input.value = window.location.origin + entry.url
-                          document.body.appendChild(input)
-                          input.select()
-                          document.execCommand('copy')
-                          document.body.removeChild(input)
-                        }
+                        await deleteVideo(entry.id)
+                        setHistory(h => h.filter(x => x.id !== entry.id))
                       }}
-                      className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-white/10 transition-all"
-                      title="Copiar link"
+                      className="p-1.5 rounded-md text-zinc-500 hover:text-red-400 hover:bg-white/10 transition-all"
+                      title="Remover"
                     >
-                      <ExternalLink size={14} />
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 ))
