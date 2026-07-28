@@ -19,7 +19,7 @@ function ffmpeg(args, cwd) {
     proc.on('close', (code) => {
       if (code === 0) resolve()
       else reject(new Error(
-        `ffmpeg ${code}\nARGS:${JSON.stringify(args)}\nSTDERR:${stderr.slice(-5000)}`
+        `ffmpeg ${code}\nARGS:${JSON.stringify(args)}\nSTDERR:${stderr.slice(-10000)}`
       ))
     })
     proc.on('error', reject)
@@ -231,6 +231,9 @@ function escapeText(t) {
     .replace(/:/g, '\\:')
     .replace(/\[/g, '\\[')
     .replace(/\]/g, '\\]')
+    .replace(/,/g, '\\,')
+    .replace(/;/g, '\\;')
+    .replace(/!/g, '\\!')
 }
 
 function calcHeaderHeight(p) {

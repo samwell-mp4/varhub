@@ -88,12 +88,11 @@ export function Header() {
       }
       const blob = await res.blob()
       if (timer) clearInterval(timer)
-      setExporting(true, 'Salvando...')
+      setExporting(false)
       const id = Math.random().toString(36).slice(2)
-      await saveVideo(id, blob, proj.title || 'Untitled').catch(() => {})
+      saveVideo(id, blob, proj.title || 'Untitled').catch(() => {})
       const entry: HistoryEntry = { id, title: proj.title || 'Untitled', date: new Date().toISOString() }
-      const updated = [entry, ...history.filter(h => h.id !== id)].slice(0, 20)
-      setHistory(updated)
+      setHistory(h => [entry, ...h.filter(x => x.id !== id)].slice(0, 20))
       if (navigator.share && navigator.canShare) {
         const file = new File([blob], 'video.mp4', { type: 'video/mp4' })
         if (navigator.canShare({ files: [file] })) {
