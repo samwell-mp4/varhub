@@ -27,6 +27,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'API key não configurada' }, { status: 500 })
     }
 
+    const body = {
+      model: 'openai/gpt-4o-mini',
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: text },
+      ],
+      temperature: 0.7,
+      max_tokens: 1000,
+    }
+
     const res = await fetch(API_URL, {
       method: 'POST',
       headers: {
@@ -35,21 +45,13 @@ export async function POST(request: Request) {
         'HTTP-Referer': 'https://var-hub-var-hub.hx8235.easypanel.host',
         'X-Title': 'Story Studio',
       },
-      body: JSON.stringify({
-        model: 'deepseek/deepseek-chat',
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: text },
-        ],
-        temperature: 0.7,
-        max_tokens: 1000,
-      }),
+      body: JSON.stringify(body),
       signal: AbortSignal.timeout(30000),
     })
 
     if (!res.ok) {
       const err = await res.text()
-      return NextResponse.json({ error: `IA: ${err.slice(0, 300)}` }, { status: 502 })
+      return NextResponse.json({ error: `IA (${res.status}): ${err.slice(0, 300)}` }, { status: 502 })
     }
 
     const data = await res.json()
