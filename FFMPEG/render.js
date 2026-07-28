@@ -1,6 +1,6 @@
 import { spawn } from 'child_process'
 import { writeFile, stat } from 'fs/promises'
-import { join } from 'path'
+import { join, extname } from 'path'
 
 const W = 1080
 const H = 1350
@@ -123,9 +123,24 @@ export async function renderVideo(project, workDir) {
   for (let i = 0; i < mediaItems.length; i++) {
     const media = mediaItems[i]
     if (media.type === 'video') {
-      const aLabel = `a${i}`
-      audioLabels.push(`[${i}:a]`)
-      audioCount++
+      const filePath = join(workDir, `media_${i}.mp4`)
+      try {
+        const out = await new Promise((resolve, reject) => {
+          const p = spawn('ffprobe', [
+            '-v', 'error', '-select_streams', 'a:0',
+            '-show_entries', 'stream=codec_type',
+            '-of', 'csv=p=0', filePath,
+          ], { stdio: ['ignore', 'pipe', 'pipe'] })
+          let data = ''
+          p.stdout.on('data', (d) => { data += d.toString() })
+          p.on('close', (code) => code === 0 ? resolve(data.trim()) : reject())
+          p.on('error', reject)
+        })
+        if (out === 'audio') {
+          audioLabels.push(`[${i}:a]`)
+          audioCount++
+        }
+      } catch { /* no audio stream, skip */ }
     }
   }
 
@@ -140,9 +155,11 @@ export async function renderVideo(project, workDir) {
   const textMaxW = W - PAD - LOGO_SIZE - 16 - PAD
 
     if (project.logo && project.logo.startsWith('data:')) {
+      const mime = project.logo.match(/^data:image\/(\w+);/)
+      const ext = mime && mime[1] === 'jpeg' ? 'jpg' : 'png'
       const b64 = project.logo.replace(/^data:image\/\w+;base64,/, '')
-      await writeFile(join(workDir, 'logo.png'), Buffer.from(b64, 'base64'))
-      inputArgs.push('-i', join(workDir, 'logo.png'))
+      await writeFile(join(workDir, `logo.${ext}`), Buffer.from(b64, 'base64'))
+      inputArgs.push('-i', join(workDir, `logo.${ext}`))
       const logoIdx = mediaItems.length
       filterParts.push(
         `[${logoIdx}:v]scale=${LOGO_SIZE}:${LOGO_SIZE}[logo_scaled]`,
