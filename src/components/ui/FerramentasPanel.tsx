@@ -34,13 +34,27 @@ export function FerramentasPanel() {
   const [copied, setCopied] = useState('')
 
   const triggerDownload = async (downloadUrl: string) => {
-    const a = document.createElement('a')
-    a.href = downloadUrl
-    a.download = 'video.mp4'
-    a.rel = 'noopener noreferrer'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
+    try {
+      const blob = await fetch(downloadUrl, {
+        headers: { 'Accept': 'video/mp4,video/*,*/*' },
+      }).then(r => r.blob())
+      const blobUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = 'video.mp4'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 120000)
+    } catch {
+      const a = document.createElement('a')
+      a.href = downloadUrl
+      a.target = '_blank'
+      a.rel = 'noopener noreferrer'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+    }
   }
 
   const handleDownload = async () => {

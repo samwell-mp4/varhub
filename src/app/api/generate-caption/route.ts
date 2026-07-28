@@ -22,19 +22,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Texto obrigatório' }, { status: 400 })
     }
 
-    const apiKey = process.env.OPENROUTER_API_KEY
+    const apiKey = process.env.OPENROUTER_API_KEY || process.env.DEEPSEEK_API_KEY
     if (!apiKey) {
       return NextResponse.json({ error: 'API key não configurada' }, { status: 500 })
     }
 
     const body = {
-      model: 'openai/gpt-4o-mini',
+      model: 'google/gemma-4-31b-it:free',
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: text },
       ],
       temperature: 0.7,
-      max_tokens: 1000,
+      max_tokens: 2000,
     }
 
     const res = await fetch(API_URL, {
