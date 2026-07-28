@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { storeVideo } from '../dl/[id]/route'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
@@ -132,9 +133,9 @@ async function instagramDownload(shortcode: string) {
         if (videoUrl) return { videoUrl, audioUrl: data?.audioUrl || null, title: data?.title || '' }
       } else if (ct.includes('octet-stream') || ct.includes('video') || ct.includes('mp4')) {
         const buffer = Buffer.from(await wh.arrayBuffer())
-        const b64 = buffer.toString('base64')
-        const dataUrl = `data:${ct || 'video/mp4'};base64,${b64}`
-        return { videoUrl: dataUrl, audioUrl: null, title: '' }
+        const id = Math.random().toString(36).slice(2)
+        storeVideo(id, buffer, ct || 'video/mp4')
+        return { videoUrl: `/api/dl/${id}`, audioUrl: null, title: '' }
       } else {
         const text = await wh.text()
         const videoUrl = extractVideoUrl(text)

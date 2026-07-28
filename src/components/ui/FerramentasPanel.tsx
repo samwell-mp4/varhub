@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Download, Link, Loader2, Music, Film, Check, Play, Camera, MessageCircle, Wrench } from 'lucide-react'
+import { Download, Link, Loader2, Music, Check, Play, Camera, MessageCircle, Wrench } from 'lucide-react'
 import { useUIStore } from '@/store'
 
 const PLATFORMS = [
@@ -28,6 +28,21 @@ export function FerramentasPanel() {
   const [result, setResult] = useState<{ videoUrl: string; audioUrl: string | null; title: string } | null>(null)
   const detected = url.trim() ? detectPlatform(url) : null
 
+  const triggerDownload = (downloadUrl: string) => {
+    if (navigator.share) {
+      navigator.share({ url: downloadUrl }).catch(() => {})
+      return
+    }
+    const a = document.createElement('a')
+    a.href = downloadUrl
+    a.download = 'video.mp4'
+    a.target = '_blank'
+    a.rel = 'noopener noreferrer'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  }
+
   const handleDownload = async () => {
     if (!url.trim()) return
     setLoading(true)
@@ -46,26 +61,12 @@ export function FerramentasPanel() {
         return
       }
       setResult(data)
+      triggerDownload(data.videoUrl)
     } catch {
       setError('Erro de conexão ao servidor')
     } finally {
       setLoading(false)
     }
-  }
-
-  const triggerDownload = (downloadUrl: string, filename: string) => {
-    if (navigator.share) {
-      navigator.share({ url: downloadUrl }).catch(() => {})
-      return
-    }
-    const a = document.createElement('a')
-    a.href = downloadUrl
-    a.download = filename
-    a.target = '_blank'
-    a.rel = 'noopener noreferrer'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
   }
 
   return (
@@ -145,26 +146,32 @@ export function FerramentasPanel() {
               {result.title && (
                 <p className="text-xs text-zinc-500 truncate">{result.title}</p>
               )}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => triggerDownload(result.videoUrl, `video.mp4`)}
-                  className="flex-1 h-9 flex items-center justify-center gap-1.5 text-xs font-medium rounded-lg bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 transition-all"
-                >
-                  <Film size={14} /> Vídeo
-                </button>
-                {result.audioUrl && (
-                  <button
-                    onClick={() => triggerDownload(result.audioUrl as string, `audio.mp3`)}
-                    className="flex-1 h-9 flex items-center justify-center gap-1.5 text-xs font-medium rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-all"
-                  >
-                    <Music size={14} /> Áudio
-                  </button>
-                )}
-              </div>
               <div className="flex items-center justify-center gap-1">
                 <Check size={12} className="text-emerald-500" />
-                <span className="text-[10px] text-zinc-600">Pronto! Clique para baixar</span>
+                <span className="text-[10px] text-zinc-600">Download iniciado!</span>
               </div>
+              {result.audioUrl && (
+                <button
+                  onClick={() => {
+                    const dl = result.audioUrl as string
+                    if (navigator.share) {
+                      navigator.share({ url: dl }).catch(() => {})
+                    } else {
+                      const a = document.createElement('a')
+                      a.href = dl
+                      a.download = 'audio.mp3'
+                      a.target = '_blank'
+                      a.rel = 'noopener noreferrer'
+                      document.body.appendChild(a)
+                      a.click()
+                      document.body.removeChild(a)
+                    }
+                  }}
+                  className="w-full h-9 flex items-center justify-center gap-1.5 text-xs font-medium rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-all"
+                >
+                  <Music size={14} /> Baixar áudio
+                </button>
+              )}
             </div>
           )}
         </div>
