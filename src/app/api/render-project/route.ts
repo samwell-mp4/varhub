@@ -6,39 +6,39 @@ const RENDER_SECRET = process.env.RENDER_SECRET || 'changeme'
 
 export const maxDuration = 300
 
+async function toDataUrl(src: string, origin: string): Promise<string> {
+  if (src.startsWith('data:')) return src
+  if (src.startsWith('blob:')) throw new Error('cannot resolve blob URL on server')
+  const url = src.startsWith('http') ? src : `${origin}${src}`
+  const res = await fetch(url, { signal: AbortSignal.timeout(10000) })
+  if (!res.ok) throw new Error(`fetch ${url}: ${res.status}`)
+  const buf = Buffer.from(await res.arrayBuffer())
+  const ct = res.headers.get('content-type') || 'image/jpeg'
+  return `data:${ct};base64,${buf.toString('base64')}`
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { project } = await req.json()
     if (!project) return NextResponse.json({ error: 'project required' }, { status: 400 })
 
-    const body = new FormData()
-
-    const mediaMap: Record<string, string> = {}
-
-    for (let i = 0; i < (project.media || []).length; i++) {
-      const m = project.media[i]
-      if (!m.src?.startsWith('data:')) continue
-
-      const [header, b64] = m.src.split(',')
-      const ext = header.includes('png') ? 'png' : header.includes('mp4') ? 'mp4' : 'jpg'
-      const buf = Buffer.from(b64, 'base64')
-      const filename = `media_${i}.${ext}`
-      body.set(filename, new Blob([buf], { type: m.type === 'video' ? 'video/mp4' : `image/${ext}` }), filename)
-      mediaMap[m.id] = filename
+    if (project.logo) {
+      project.logo = await toDataUrl(project.logo, req.nextUrl.origin)
     }
 
-    const projectCopy = JSON.parse(JSON.stringify(project))
-    for (const m of projectCopy.media || []) {
-      if (mediaMap[m.id]) {
-        m.src = mediaMap[m.id]
+    for (const m of project.media || []) {
+      if (m.src && !m.src.startsWith('data:')) {
+        m.src = await toDataUrl(m.src, req.nextUrl.origin)
       }
     }
-    body.set('project', JSON.stringify(projectCopy))
 
     const res = await fetch(`${RENDERER_URL}/render`, {
       method: 'POST',
-      headers: { 'x-secret': RENDER_SECRET },
-      body,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-secret': RENDER_SECRET,
+      },
+      body: JSON.stringify({ project }),
       signal: AbortSignal.timeout(240000),
     })
 

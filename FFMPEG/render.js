@@ -59,11 +59,8 @@ export async function renderVideo(project, workDir) {
     const cropLabel = `${slotLabel}_c`
     const outLabel = `${slotLabel}_o`
 
-    // save media to disk
-    const isDataUrl = media.src?.startsWith('data:')
-    if (!isDataUrl) {
-      inputArgs.push('-i', join(workDir, media.src))
-    } else if (media.type === 'video') {
+    // save media to disk (src is always data URL)
+    if (media.type === 'video') {
       const b64 = media.src.replace(/^data:video\/\w+;base64,/, '')
       await writeFile(join(workDir, `media_${i}.mp4`), Buffer.from(b64, 'base64'))
       inputArgs.push('-i', join(workDir, `media_${i}.mp4`))
@@ -138,9 +135,7 @@ export async function renderVideo(project, workDir) {
   const textX = PAD + LOGO_SIZE + 16
   const textMaxW = W - PAD - LOGO_SIZE - 16 - PAD
 
-  if (project.logo) {
-    const isDataUrl = project.logo.startsWith('data:')
-    if (isDataUrl) {
+    if (project.logo && project.logo.startsWith('data:')) {
       const b64 = project.logo.replace(/^data:image\/\w+;base64,/, '')
       await writeFile(join(workDir, 'logo.png'), Buffer.from(b64, 'base64'))
       inputArgs.push('-i', join(workDir, 'logo.png'))
@@ -150,12 +145,7 @@ export async function renderVideo(project, workDir) {
         `[${lastLabel}][logo_scaled]overlay=${PAD}:${PAD}[with_logo]`
       )
       lastLabel = 'with_logo'
-    } else if (project.logo.startsWith('/')) {
-      inputArgs.push('-i', join(workDir, '..', project.logo.slice(1)))
-    } else {
-      inputArgs.push('-i', project.logo)
     }
-  }
 
   if (project.category) {
     filterParts.push(
