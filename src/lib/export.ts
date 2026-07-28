@@ -143,7 +143,13 @@ function drawHeader(ctx: CanvasRenderingContext2D, project: Project, headerH: nu
   }
 }
 
-function downloadBlob(blob: Blob, filename: string) {
+async function downloadBlob(blob: Blob, filename: string) {
+  if (navigator.share) {
+    try {
+      await navigator.share({ files: [new File([blob], filename, { type: blob.type })] })
+      return
+    } catch {}
+  }
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
@@ -303,7 +309,7 @@ export async function exportProject(
     const blob = await new Promise<Blob>((resolve) =>
       canvas.toBlob((b) => resolve(b!), 'image/png')
     )
-    downloadBlob(blob, `${project.title || 'arte'}.png`)
+    await downloadBlob(blob, `${project.title || 'arte'}.png`)
     cleanupVideos(videoElements, hiddenContainer)
     return
   }
@@ -320,7 +326,7 @@ export async function exportProject(
     const blob = await new Promise<Blob>((resolve) =>
       canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.95)
     )
-    downloadBlob(blob, `${project.title || 'arte'}.jpg`)
+    await downloadBlob(blob, `${project.title || 'arte'}.jpg`)
     cleanupVideos(videoElements, hiddenContainer)
     return
   }
@@ -451,7 +457,7 @@ export async function exportProject(
 
     const ext = mimeType.startsWith('video/mp4') ? 'mp4' : 'webm'
     const blob = new Blob(chunks, { type: mimeType })
-    downloadBlob(blob, `${project.title || 'arte'}.${ext}`)
+    await downloadBlob(blob, `${project.title || 'arte'}.${ext}`)
   }
 }
 
