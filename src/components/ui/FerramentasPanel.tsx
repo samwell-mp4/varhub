@@ -34,18 +34,6 @@ export function FerramentasPanel() {
   const [copied, setCopied] = useState('')
 
   const triggerDownload = async (downloadUrl: string) => {
-    if (navigator.share) {
-      const blob = await fetch(downloadUrl).then(r => r.blob()).catch(() => null)
-      if (blob) {
-        const file = new File([blob], 'video.mp4', { type: 'video/mp4' })
-        if (navigator.canShare?.({ files: [file] })) {
-          await navigator.share({ files: [file] }).catch(() => {})
-          return
-        }
-      }
-      navigator.share({ url: downloadUrl }).catch(() => {})
-      return
-    }
     try {
       const blob = await fetch(downloadUrl).then(r => r.blob())
       const url = URL.createObjectURL(blob)
