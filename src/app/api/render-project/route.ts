@@ -6,15 +6,19 @@ const RENDER_SECRET = process.env.RENDER_SECRET || 'changeme'
 
 export const maxDuration = 300
 
-async function toDataUrl(src: string, origin: string): Promise<string> {
+async function toDataUrl(src: string, origin: string): Promise<string | undefined> {
   if (src.startsWith('data:')) return src
-  if (src.startsWith('blob:')) throw new Error('cannot resolve blob URL on server')
-  const url = src.startsWith('http') ? src : `${origin}${src}`
-  const res = await fetch(url, { signal: AbortSignal.timeout(10000) })
-  if (!res.ok) throw new Error(`fetch ${url}: ${res.status}`)
-  const buf = Buffer.from(await res.arrayBuffer())
-  const ct = res.headers.get('content-type') || 'image/jpeg'
-  return `data:${ct};base64,${buf.toString('base64')}`
+  if (src.startsWith('blob:')) return undefined
+  try {
+    const url = src.startsWith('http') ? src : `${origin}${src}`
+    const res = await fetch(url, { signal: AbortSignal.timeout(10000) })
+    if (!res.ok) return undefined
+    const buf = Buffer.from(await res.arrayBuffer())
+    const ct = res.headers.get('content-type') || 'image/jpeg'
+    return `data:${ct};base64,${buf.toString('base64')}`
+  } catch {
+    return undefined
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -23,12 +27,13 @@ export async function POST(req: NextRequest) {
     if (!project) return NextResponse.json({ error: 'project required' }, { status: 400 })
 
     if (project.logo) {
-      project.logo = await toDataUrl(project.logo, req.nextUrl.origin)
+      project.logo = (await toDataUrl(project.logo, req.nextUrl.origin)) || undefined
     }
 
     for (const m of project.media || []) {
       if (m.src && !m.src.startsWith('data:')) {
-        m.src = await toDataUrl(m.src, req.nextUrl.origin)
+        const converted = await toDataUrl(m.src, req.nextUrl.origin)
+        if (converted) m.src = converted
       }
     }
 
@@ -44,7 +49,7 @@ export async function POST(req: NextRequest) {
 
     if (!res.ok) {
       const text = await res.text()
-      return NextResponse.json({ error: `renderer: ${text}` }, { status: 502 })
+      return NextResponse.json({ error: `renderer: ${text.slice(0, 500)}` }, { status: 502 })
     }
 
     const buffer = Buffer.from(await res.arrayBuffer())
@@ -53,7 +58,8 @@ export async function POST(req: NextRequest) {
     storeVideo(id, buffer, ct)
 
     return NextResponse.json({ videoUrl: `/api/dl/${id}` })
-  } catch {
-    return NextResponse.json({ error: 'render failed' }, { status: 500 })
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'unknown error'
+    return NextResponse.json({ error: `render failed: ${msg}` }, { status: 500 })
   }
 }
