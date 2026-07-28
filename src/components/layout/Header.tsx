@@ -23,10 +23,24 @@ export function Header() {
     listVideos().then(setHistory).catch(() => {})
   }, [])
 
-  const isIOS = typeof navigator !== 'undefined' && !!navigator.share
-
   const serverExport = async (imageDuration?: number) => {
-    setExporting(true, 'Renderizando no servidor...')
+    const totalSec = (project.media || []).reduce((sum, m) => {
+      if (m.type === 'image') return sum + (imageDuration || 3)
+      if (m.trim) return sum + (m.trim.end - m.trim.start)
+      return sum + (m.duration || 3)
+    }, 0)
+    const estSec = Math.max(totalSec, 3) * 2 + 5
+    const start = Date.now()
+    let timer: ReturnType<typeof setInterval> | null = null
+
+    const updateProgress = () => {
+      const elapsed = (Date.now() - start) / 1000
+      const pct = Math.min(99, Math.round((elapsed / estSec) * 100))
+      setExporting(true, `Renderizando... ${pct}%`)
+    }
+
+    setExporting(true, 'Renderizando... 0%')
+    timer = setInterval(updateProgress, 1000)
     try {
       const proj: Record<string, any> = JSON.parse(JSON.stringify(project))
       if (imageDuration && proj.media.every((m: any) => m.type === 'image')) {
@@ -73,6 +87,8 @@ export function Header() {
         throw new Error(`renderer ${res.status}: ${txt.slice(0, 3000)}`)
       }
       const blob = await res.blob()
+      if (timer) clearInterval(timer)
+      setExporting(true, 'Salvando...')
       const id = Math.random().toString(36).slice(2)
       await saveVideo(id, blob, proj.title || 'Untitled').catch(() => {})
       const entry: HistoryEntry = { id, title: proj.title || 'Untitled', date: new Date().toISOString() }
@@ -96,6 +112,7 @@ export function Header() {
     } catch (e) {
       console.error(e)
     }
+    if (timer) clearInterval(timer)
     setExporting(false)
   }
 
