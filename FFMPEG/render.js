@@ -3,7 +3,7 @@ import { writeFile, stat } from 'fs/promises'
 import { join, extname } from 'path'
 
 const W = 1080
-const H = 1350
+const H = 1920
 const FPS = 30
 const PAD = 32
 const LOGO_SIZE = 44

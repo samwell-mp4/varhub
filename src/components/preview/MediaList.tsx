@@ -20,7 +20,7 @@ export function MediaList() {
 
   const getSlotAspect = (mediaIndex: number): number => {
     const slot = template.slots[mediaIndex]
-    if (!slot) return 4 / 5
+    if (!slot) return 9 / 16
     return (slot.width / 100) / (slot.height / 100)
   }
 
