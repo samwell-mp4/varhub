@@ -43,8 +43,6 @@ export function Header() {
     timer = setInterval(updateProgress, 1000)
     try {
       const proj: Record<string, any> = JSON.parse(JSON.stringify(project))
-      console.log('SUBTITLE RAW:', JSON.stringify(project.subtitle))
-      console.log('SUBTITLE CHARS:', [...(project.subtitle || '')].map(c => `${c}(${c.charCodeAt(0)})`))
       if (imageDuration) {
         for (const m of proj.media) {
           if (m.type === 'image') {
