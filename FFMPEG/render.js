@@ -19,7 +19,7 @@ function ffmpeg(args, cwd) {
     proc.on('close', (code) => {
       if (code === 0) resolve()
       else reject(new Error(
-        `ffmpeg ${code}\nARGS:${JSON.stringify(args)}\nSTDERR:${stderr.slice(-10000)}`
+        `ffmpeg ${code}\nARGS:${JSON.stringify(args)}\nSTDERR:${stderr.slice(-20000)}`
       ))
     })
     proc.on('error', reject)

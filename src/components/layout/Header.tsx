@@ -81,6 +81,7 @@ export function Header() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-secret': renderSecret },
         body: JSON.stringify({ project: proj }),
+        signal: AbortSignal.timeout(60000),
       })
       if (!res.ok) {
         const txt = await res.text().catch(() => '')
