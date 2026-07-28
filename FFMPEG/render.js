@@ -150,8 +150,8 @@ export async function renderVideo(project, workDir) {
   }
 
   // --- header text (title + subtitle) ---
-  let textY = PAD + 4
-  const textX = PAD + LOGO_SIZE + 16
+  let textY = Math.round(PAD + 4)
+  const textX = Math.round(PAD + LOGO_SIZE + 16)
   const textMaxW = W - PAD - LOGO_SIZE - 16 - PAD
 
     if (project.logo && project.logo.startsWith('data:')) {
@@ -180,25 +180,25 @@ export async function renderVideo(project, workDir) {
   }
 
   if (project.title) {
-    const fontSize = (project.titleSize || 16) * 2.25
+    const fontSize = Math.round((project.titleSize || 16) * 2.25)
     const bold = project.titleBold !== false ? ':fontfile=' + fontFile : ''
     const titleFile = join(workDir, 'text_title.txt')
     await writeFile(titleFile, project.title)
     filterParts.push(
       `[${lastLabel}]drawtext=textfile=${titleFile}:` +
-      `x=${textX}:y=${textY}:fontsize=${Math.round(fontSize)}:fontcolor=${project.titleColor || '#ffffff'}${bold}[title]`
+      `x=${textX}:y=${textY}:fontsize=${fontSize}:fontcolor=${project.titleColor || '#ffffff'}${bold}[title]`
     )
     lastLabel = 'title'
     textY += fontSize + 8
   }
 
   if (project.subtitle) {
-    const subSize = (project.subtitleSize || 13) * 2.25
+    const subSize = Math.round((project.subtitleSize || 13) * 2.25)
     const subFile = join(workDir, 'text_sub.txt')
     await writeFile(subFile, project.subtitle)
     filterParts.push(
       `[${lastLabel}]drawtext=textfile=${subFile}:` +
-      `x=${textX}:y=${textY}:fontsize=${Math.round(subSize)}:fontcolor=${project.subtitleColor || '#a1a1aa'}[sub]`
+      `x=${textX}:y=${textY}:fontsize=${subSize}:fontcolor=${project.subtitleColor || '#a1a1aa'}[sub]`
     )
     lastLabel = 'sub'
   }
@@ -237,7 +237,7 @@ function calcHeaderHeight(p) {
   if (p.category) h += 22
   h += tSize + 8
   if (p.subtitle) h += (p.subtitleSize || 13) * 2.25 + 8
-  return h + PAD
+  return Math.round(h + PAD)
 }
 
 function getSlot(project, idx) {
