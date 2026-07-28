@@ -220,11 +220,9 @@ export async function renderVideo(project, workDir) {
     }
 
   if (project.category) {
-    const catFile = join(workDir, 'text_cat.txt')
-    await writeFile(catFile, cleanText(project.category.toUpperCase()), 'utf8')
     filterParts.push(
-      `[${lastLabel}]drawtext=textfile=${catFile}:` +
-      `x=${textX}:y=${textY}:fontsize=18:fontcolor=#a78bfa:fontfile=${fontRegular}:line_spacing=8[cat]`
+      `[${lastLabel}]drawtext=text=${esc(project.category.toUpperCase())}:` +
+      `x=${textX}:y=${textY}:fontsize=18:fontcolor=#a78bfa:fontfile=${fontRegular}[cat]`
     )
     lastLabel = 'cat'
     textY += 26
@@ -235,7 +233,7 @@ export async function renderVideo(project, workDir) {
     const bold = project.titleBold !== false ? ':fontfile=' + fontBold : ':fontfile=' + fontRegular
     const titleLines = wrapText(project.title, textMaxW, fontSize).split('\n')
     for (let i = 0; i < titleLines.length; i++) {
-      const lineLabel = i === 0 ? 'title' : `title_${i}`
+      const lineLabel = `title_${i}`
       const prev = i === 0 ? lastLabel : `title_${i - 1}`
       const lineY = textY + i * (fontSize + 12)
       filterParts.push(
@@ -251,7 +249,7 @@ export async function renderVideo(project, workDir) {
     const subBold = project.subtitleBold ? ':fontfile=' + fontBold : ':fontfile=' + fontRegular
     const subLines = wrapText(project.subtitle, textMaxW, subSize).split('\n')
     for (let i = 0; i < subLines.length; i++) {
-      const lineLabel = i === 0 ? 'sub' : `sub_${i}`
+      const lineLabel = `sub_${i}`
       const prev = i === 0 ? lastLabel : `sub_${i - 1}`
       const lineY = textY + i * (subSize + 12)
       filterParts.push(
