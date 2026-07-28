@@ -53,6 +53,19 @@ function wrapText(text, maxWidthPx, fontSize) {
   return lines.join('\n')
 }
 
+function escapeDrawtext(text) {
+  return text
+    .replace(/\\/g, '\\\\')
+    .replace(/:/g, '\\:')
+    .replace(/,/g, '\\,')
+    .replace(/;/g, '\\;')
+    .replace(/'/g, "\\'")
+    .replace(/\[/g, '\\[')
+    .replace(/\]/g, '\\]')
+    .replace(/%/g, '\\%')
+    .replace(/\n/g, '\\n')
+}
+
 export async function renderVideo(project, workDir) {
   const bgColor = project.bgColor || '#000000'
   const mediaItems = project.media || []
@@ -207,10 +220,8 @@ export async function renderVideo(project, workDir) {
     }
 
   if (project.category) {
-    const catFile = join(workDir, 'text_cat.txt')
-    await writeFile(catFile, project.category.toUpperCase())
     filterParts.push(
-      `[${lastLabel}]drawtext=textfile=${catFile}:` +
+      `[${lastLabel}]drawtext=text=${escapeDrawtext(project.category.toUpperCase())}:` +
       `x=${textX}:y=${textY}:fontsize=18:fontcolor=#a78bfa:fontfile=${fontRegular}[cat]`
     )
     lastLabel = 'cat'
@@ -220,10 +231,8 @@ export async function renderVideo(project, workDir) {
   if (project.title) {
     const fontSize = Math.round((project.titleSize || 16) * 2.25)
     const bold = project.titleBold !== false ? ':fontfile=' + fontBold : ':fontfile=' + fontRegular
-    const titleFile = join(workDir, 'text_title.txt')
-    await writeFile(titleFile, wrapText(project.title, textMaxW, fontSize))
     filterParts.push(
-      `[${lastLabel}]drawtext=textfile=${titleFile}:` +
+      `[${lastLabel}]drawtext=text=${escapeDrawtext(wrapText(project.title, textMaxW, fontSize))}:` +
       `x=${textX}:y=${textY}:fontsize=${fontSize}:fontcolor=${project.titleColor || '#ffffff'}${bold}[title]`
     )
     lastLabel = 'title'
@@ -234,10 +243,8 @@ export async function renderVideo(project, workDir) {
   if (project.subtitle) {
     const subSize = Math.round((project.subtitleSize || 13) * 2.25)
     const subBold = project.subtitleBold ? ':fontfile=' + fontBold : ':fontfile=' + fontRegular
-    const subFile = join(workDir, 'text_sub.txt')
-    await writeFile(subFile, wrapText(project.subtitle, textMaxW, subSize))
     filterParts.push(
-      `[${lastLabel}]drawtext=textfile=${subFile}:` +
+      `[${lastLabel}]drawtext=text=${escapeDrawtext(wrapText(project.subtitle, textMaxW, subSize))}:` +
       `x=${textX}:y=${textY}:fontsize=${subSize}:fontcolor=${project.subtitleColor || '#a1a1aa'}${subBold}[sub]`
     )
     lastLabel = 'sub'
