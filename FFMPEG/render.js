@@ -64,7 +64,8 @@ export async function renderVideo(project, workDir) {
   const inputArgs = []
   const inputLabels = []
 
-  const fontFile = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
+  const fontBold = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
+  const fontRegular = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
 
   // --- background ---
   filterParts.push(`color=c=${bgColor}:s=${W}x${H}:r=${FPS}[bg]`)
@@ -210,7 +211,7 @@ export async function renderVideo(project, workDir) {
     await writeFile(catFile, project.category.toUpperCase())
     filterParts.push(
       `[${lastLabel}]drawtext=textfile=${catFile}:` +
-      `x=${textX}:y=${textY}:fontsize=18:fontcolor=#a78bfa:fontfile=${fontFile}[cat]`
+      `x=${textX}:y=${textY}:fontsize=18:fontcolor=#a78bfa:fontfile=${fontRegular}[cat]`
     )
     lastLabel = 'cat'
     textY += 26
@@ -218,7 +219,7 @@ export async function renderVideo(project, workDir) {
 
   if (project.title) {
     const fontSize = Math.round((project.titleSize || 16) * 2.25)
-    const bold = project.titleBold !== false ? ':fontfile=' + fontFile : ''
+    const bold = project.titleBold !== false ? ':fontfile=' + fontBold : ':fontfile=' + fontRegular
     const titleFile = join(workDir, 'text_title.txt')
     await writeFile(titleFile, wrapText(project.title, textMaxW, fontSize))
     filterParts.push(
@@ -232,11 +233,12 @@ export async function renderVideo(project, workDir) {
 
   if (project.subtitle) {
     const subSize = Math.round((project.subtitleSize || 13) * 2.25)
+    const subBold = project.subtitleBold ? ':fontfile=' + fontBold : ':fontfile=' + fontRegular
     const subFile = join(workDir, 'text_sub.txt')
     await writeFile(subFile, wrapText(project.subtitle, textMaxW, subSize))
     filterParts.push(
       `[${lastLabel}]drawtext=textfile=${subFile}:` +
-      `x=${textX}:y=${textY}:fontsize=${subSize}:fontcolor=${project.subtitleColor || '#a1a1aa'}:fontfile=${fontFile}[sub]`
+      `x=${textX}:y=${textY}:fontsize=${subSize}:fontcolor=${project.subtitleColor || '#a1a1aa'}${subBold}[sub]`
     )
     lastLabel = 'sub'
   }
@@ -282,7 +284,7 @@ function calcHeaderHeight(p) {
     const lines = wrapText(p.subtitle, textMaxW, subSize).split('\n').length
     textY += subSize * lines + 8
   }
-  return Math.round(Math.max(logoBottom, textY) + 8)
+  return Math.round(Math.max(logoBottom, textY) + 28)
 }
 
 function getSlot(templateId, idx) {
