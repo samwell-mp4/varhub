@@ -255,6 +255,25 @@ async function tiktokDownload(url: string) {
   return null
 }
 
+async function proxyMedia(url: string, ext: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, {
+      signal: AbortSignal.timeout(15000),
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      },
+    })
+    if (!res.ok) return null
+    const buffer = Buffer.from(await res.arrayBuffer())
+    const type = res.headers.get('content-type') || 'video/mp4'
+    const id = crypto.randomUUID()
+    storeVideo(id, buffer, type)
+    return `/api/dl/${id}`
+  } catch {
+    return null
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const { url } = await request.json()
@@ -292,7 +311,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Não foi possível obter o vídeo' }, { status: 400 })
     }
 
-    return NextResponse.json(result)
+    const proxiedVideo = await proxyMedia(result.videoUrl, 'mp4')
+    let proxiedAudio: string | null = null
+    if (result.audioUrl) {
+      proxiedAudio = await proxyMedia(result.audioUrl, 'mp3')
+    }
+
+    return NextResponse.json({
+      videoUrl: proxiedVideo || result.videoUrl,
+      audioUrl: proxiedAudio || result.audioUrl,
+      title: result.title,
+    })
   } catch {
     return NextResponse.json({ error: 'Erro ao processar o vídeo' }, { status: 500 })
   }

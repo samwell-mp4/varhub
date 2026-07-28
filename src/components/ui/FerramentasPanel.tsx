@@ -34,25 +34,13 @@ export function FerramentasPanel() {
   const [copied, setCopied] = useState('')
 
   const triggerDownload = async (downloadUrl: string) => {
-    try {
-      const blob = await fetch(downloadUrl).then(r => r.blob())
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'video.mp4'
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      setTimeout(() => URL.revokeObjectURL(url), 60000)
-    } catch {
-      const a = document.createElement('a')
-      a.href = downloadUrl
-      a.target = '_blank'
-      a.rel = 'noopener noreferrer'
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-    }
+    const a = document.createElement('a')
+    a.href = downloadUrl
+    a.download = 'video.mp4'
+    a.rel = 'noopener noreferrer'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
   }
 
   const handleDownload = async () => {
@@ -167,18 +155,13 @@ export function FerramentasPanel() {
                 <button
                   onClick={() => {
                     const dl = result.audioUrl as string
-                    if (navigator.share) {
-                      navigator.share({ url: dl }).catch(() => {})
-                    } else {
-                      const a = document.createElement('a')
-                      a.href = dl
-                      a.download = 'audio.mp3'
-                      a.target = '_blank'
-                      a.rel = 'noopener noreferrer'
-                      document.body.appendChild(a)
-                      a.click()
-                      document.body.removeChild(a)
-                    }
+                    const a = document.createElement('a')
+                    a.href = dl
+                    a.download = 'audio.mp3'
+                    a.rel = 'noopener noreferrer'
+                    document.body.appendChild(a)
+                    a.click()
+                    document.body.removeChild(a)
                   }}
                   className="w-full h-9 flex items-center justify-center gap-1.5 text-xs font-medium rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-all"
                 >
