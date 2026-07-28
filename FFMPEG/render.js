@@ -16,7 +16,7 @@ function ffmpeg(args, cwd) {
     proc.stderr.on('data', (d) => { stderr += d.toString() })
     proc.on('close', (code) => {
       if (code === 0) resolve()
-      else reject(new Error(`ffmpeg exited ${code}:\n${stderr.slice(-2000)}`))
+      else reject(new Error(`ffmpeg exited ${code}:\nHEAD:\n${stderr.slice(0, 1000)}\nTAIL:\n${stderr.slice(-2000)}`))
     })
     proc.on('error', reject)
   })
