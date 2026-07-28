@@ -59,7 +59,10 @@ export function Header() {
         headers: { 'Content-Type': 'application/json', 'x-secret': renderSecret },
         body: JSON.stringify({ project: proj }),
       })
-      if (!res.ok) throw new Error(`renderer: ${res.status}`)
+      if (!res.ok) {
+        const txt = await res.text().catch(() => '')
+        throw new Error(`renderer ${res.status}: ${txt.slice(0, 300)}`)
+      }
       const blob = await res.blob()
       if (navigator.share && navigator.canShare) {
         const file = new File([blob], 'video.mp4', { type: 'video/mp4' })
