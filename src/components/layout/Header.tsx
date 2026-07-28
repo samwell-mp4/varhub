@@ -61,7 +61,7 @@ export function Header() {
       })
       if (!res.ok) {
         const txt = await res.text().catch(() => '')
-        throw new Error(`renderer ${res.status}: ${txt.slice(0, 300)}`)
+        throw new Error(`renderer ${res.status}: ${txt.slice(0, 3000)}`)
       }
       const blob = await res.blob()
       if (navigator.share && navigator.canShare) {
