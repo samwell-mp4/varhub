@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { storeVideo } from '../dl/[id]/route'
 
-const RENDERER_URL = process.env.RENDERER_URL || 'http://localhost:3001'
+const RENDERER_URL = process.env.RENDERER_URL || 'https://var-hub-ffmpeg.hx8235.easypanel.host'
 const RENDER_SECRET = process.env.RENDER_SECRET || 'changeme'
 
 export const maxDuration = 300

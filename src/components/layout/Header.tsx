@@ -14,8 +14,59 @@ export function Header() {
   const [duration, setDuration] = useState(5)
   const [pendingFormat, setPendingFormat] = useState<'png' | 'jpg' | 'mp4' | null>(null)
 
+  const isIOS = typeof navigator !== 'undefined' && !!navigator.share
+
+  const serverExport = async (imageDuration?: number) => {
+    setExporting(true, 'Renderizando no servidor...')
+    try {
+      const proj = { ...project }
+      if (imageDuration && project.media.every(m => m.type === 'image')) {
+        for (const m of proj.media) {
+          if (m.type === 'image') {
+            ;(m as any).duration = imageDuration
+            ;(m as any).trim = undefined
+          }
+        }
+      }
+      const res = await fetch('/api/render-project', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ project: proj }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.videoUrl) {
+        throw new Error(data.error || 'render failed')
+      }
+      const dlUrl = `${window.location.origin}${data.videoUrl}`
+      if (navigator.share) {
+        await navigator.share({ url: dlUrl }).catch(() => {})
+      } else {
+        const a = document.createElement('a')
+        a.href = dlUrl
+        a.download = 'video.mp4'
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+      }
+    } catch (e) {
+      console.error(e)
+    }
+    setExporting(false)
+  }
+
   const handleExport = async (format: 'png' | 'jpg' | 'mp4') => {
     if (isExporting) return
+
+    if (format === 'mp4' && isIOS) {
+      const hasOnlyImages = project.media.length > 0 && project.media.every(m => m.type === 'image')
+      if (hasOnlyImages) {
+        setPendingFormat(format)
+        setShowDuration(true)
+        return
+      }
+      await serverExport()
+      return
+    }
 
     const hasOnlyImages = project.media.length > 0 && project.media.every(m => m.type === 'image')
     if (format === 'mp4' && hasOnlyImages) {
@@ -37,6 +88,10 @@ export function Header() {
     setShowDuration(false)
     const format = pendingFormat!
     setPendingFormat(null)
+    if (format === 'mp4' && isIOS) {
+      await serverExport(duration)
+      return
+    }
     setExporting(true, `Exportando ${format.toUpperCase()}...`)
     try {
       await exportProject(project, format, (msg) => setExporting(true, msg), duration)
