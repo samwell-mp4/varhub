@@ -247,7 +247,12 @@ export async function renderVideo(project, workDir) {
     const subSize = Math.round((project.subtitleSize || 13) * 2.25)
     const subBold = project.subtitleBold ? ':fontfile=' + fontBold : ':fontfile=' + fontRegular
     const subFile = join(workDir, 'text_sub.txt')
-    await writeFile(subFile, wrapText(project.subtitle, textMaxW, subSize), 'utf8')
+    const subWrapped = wrapText(project.subtitle, textMaxW, subSize)
+    console.log('WRAPPED:', JSON.stringify(subWrapped))
+    for (const c of subWrapped) {
+      console.log(`  char: ${c} code: ${c.charCodeAt(0)} hex: ${c.charCodeAt(0).toString(16)}`)
+    }
+    await writeFile(subFile, subWrapped, 'utf8')
     filterParts.push(
       `[${lastLabel}]drawtext=textfile=${subFile}:` +
       `x=${textX}:y=${textY}:fontsize=${subSize}:fontcolor=${project.subtitleColor || '#a1a1aa'}${subBold}:line_spacing=12[sub]`
