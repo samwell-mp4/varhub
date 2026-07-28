@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-const DEEPSEEK_URL = 'https://api.deepseek.com/v1/chat/completions'
+const API_URL = 'https://openrouter.ai/api/v1/chat/completions'
 
 const SYSTEM_PROMPT = `Você é um especialista em criar legendas otimizadas para redes sociais.
 Sempre responda APENAS com JSON válido no formato:
@@ -22,19 +22,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Texto obrigatório' }, { status: 400 })
     }
 
-    const apiKey = process.env.DEEPSEEK_API_KEY
+    const apiKey = process.env.OPENROUTER_API_KEY
     if (!apiKey) {
       return NextResponse.json({ error: 'API key não configurada' }, { status: 500 })
     }
 
-    const res = await fetch(DEEPSEEK_URL, {
+    const res = await fetch(API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
+        'HTTP-Referer': 'https://var-hub-var-hub.hx8235.easypanel.host',
+        'X-Title': 'Story Studio',
       },
       body: JSON.stringify({
-        model: 'deepseek-chat',
+        model: 'deepseek/deepseek-chat',
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: text },
@@ -47,7 +49,7 @@ export async function POST(request: Request) {
 
     if (!res.ok) {
       const err = await res.text()
-      return NextResponse.json({ error: `DeepSeek: ${err.slice(0, 300)}` }, { status: 502 })
+      return NextResponse.json({ error: `IA: ${err.slice(0, 300)}` }, { status: 502 })
     }
 
     const data = await res.json()
