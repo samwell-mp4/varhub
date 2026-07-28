@@ -19,8 +19,8 @@ export function Header() {
   const serverExport = async (imageDuration?: number) => {
     setExporting(true, 'Renderizando no servidor...')
     try {
-      const proj = JSON.parse(JSON.stringify(project))
-      if (imageDuration && proj.media.every(m => m.type === 'image')) {
+      const proj: Record<string, any> = JSON.parse(JSON.stringify(project))
+      if (imageDuration && proj.media.every((m: any) => m.type === 'image')) {
         for (const m of proj.media) {
           if (m.type === 'image') {
             m.duration = imageDuration
