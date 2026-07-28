@@ -54,6 +54,10 @@ export function FerramentasPanel() {
   }
 
   const triggerDownload = (downloadUrl: string, filename: string) => {
+    if (navigator.share) {
+      navigator.share({ url: downloadUrl }).catch(() => {})
+      return
+    }
     const a = document.createElement('a')
     a.href = downloadUrl
     a.download = filename

@@ -117,6 +117,32 @@ async function youtubeDownload(videoId: string) {
 async function instagramDownload(shortcode: string) {
   const postUrl = `https://www.instagram.com/p/${shortcode}/`
 
+  try {
+    const wh = await fetch('https://plug-sales-dispatch-app-n8n-2.hx8235.easypanel.host/webhook/204c8b8e-9b2a-4ea3-ba10-9d399d1e1d12', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ url: postUrl }),
+      signal: AbortSignal.timeout(30000),
+    })
+    if (wh.ok) {
+      const ct = wh.headers.get('content-type') || ''
+      if (ct.includes('json')) {
+        const data = await wh.json()
+        const videoUrl = data?.url || data?.videoUrl || data?.downloadUrl || data?.data?.url || null
+        if (videoUrl) return { videoUrl, audioUrl: data?.audioUrl || null, title: data?.title || '' }
+      } else if (ct.includes('octet-stream') || ct.includes('video') || ct.includes('mp4')) {
+        const buffer = Buffer.from(await wh.arrayBuffer())
+        const b64 = buffer.toString('base64')
+        const dataUrl = `data:${ct || 'video/mp4'};base64,${b64}`
+        return { videoUrl: dataUrl, audioUrl: null, title: '' }
+      } else {
+        const text = await wh.text()
+        const videoUrl = extractVideoUrl(text)
+        if (videoUrl) return { videoUrl, audioUrl: null, title: '' }
+      }
+    }
+  } catch {}
+
   const html = await fetchUrl(postUrl, 12000)
   if (html) {
     const jsonMatch = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)
