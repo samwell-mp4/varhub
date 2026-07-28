@@ -1,4 +1,20 @@
-import { MediaItem, Template } from '@/types'
+import { MediaItem, Template, Project } from '@/types'
+
+const PAD = 32
+const CANVAS_H = 1350
+
+export function getHeaderHeightPct(project: Pick<Project, 'category' | 'titleSize' | 'subtitleSize' | 'subtitle'>): number {
+  let h = PAD
+  if (project.category) h += 22
+  const tSize = (project.titleSize || 16) * 2.25
+  h += tSize + 8
+  if (project.subtitle) h += (project.subtitleSize || 13) * 2.25 + 8
+  h += PAD
+  return Math.round(Math.round(h) / CANVAS_H * 100)
+}
+
+const FONT_SCALE = 2.25
+export { FONT_SCALE }
 
 export function selectTemplate(media: MediaItem[]): number {
   const imageCount = media.filter(m => m.type === 'image').length

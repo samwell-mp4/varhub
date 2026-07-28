@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react'
 import { MediaItem } from '@/types'
-import { TEMPLATES } from '@/lib/autoLayout'
+import { TEMPLATES, getHeaderHeightPct } from '@/lib/autoLayout'
 import { useProjectStore } from '@/store'
 
 const PAN_SPEED = 0.35
@@ -157,39 +157,43 @@ export function AutoTemplate({ media, templateId, title, subtitle, category, log
     )
   }
 
+  const headerPct = getHeaderHeightPct({ category, titleSize, subtitleSize, subtitle })
+  const mediaPct = 100 - headerPct
+
   return (
     <div
-      className="w-full h-full flex flex-col select-none touch-none"
+      className="w-full h-full select-none touch-none"
       style={{ backgroundColor: bgColor || '#000' }}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
       onPointerLeave={handlePointerUp}
     >
-      <div className="px-4 pt-3 pb-3 bg-gradient-to-b from-black/85 via-black/40 to-transparent">
-        <div className="flex items-start gap-3">
-          <div className="shrink-0 mt-0.5">
+      <div
+        className="relative bg-gradient-to-b from-black/85 via-black/40 to-transparent px-4 overflow-hidden"
+        style={{ height: `${headerPct}%` }}
+      >
+        <div className="flex items-start gap-3 pt-3">
+          <div className="shrink-0 mt-0.5 aspect-square rounded-full overflow-hidden ring-2 ring-white/20" style={{ width: '4.07%' }}>
             {logo ? (
-              <div className="w-16 h-16 rounded-full overflow-hidden ring-2 ring-white/20">
-                <img src={logo} alt="logo" className="w-full h-full object-cover" />
-              </div>
+              <img src={logo} alt="logo" className="w-full h-full object-cover" />
             ) : (
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center ring-2 ring-white/10">
-                <span className="text-white text-base font-bold">S</span>
+              <div className="w-full h-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                <span className="text-white font-bold" style={{ fontSize: '40%' }}>S</span>
               </div>
             )}
           </div>
           <div className="flex-1 min-w-0">
             {category && (
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-violet-400">
+              <span className="font-semibold uppercase tracking-wider text-violet-400" style={{ fontSize: `${18 / 2.25}px` }}>
                 {category}
               </span>
             )}
-            <h2 className="leading-tight" style={{ fontSize: titleSize ?? 16, fontWeight: (titleBold ?? true) ? 700 : 400, color: titleColor || '#ffffff' }}>
+            <h2 className="leading-tight" style={{ fontSize: `${titleSize ?? 16}px`, fontWeight: (titleBold ?? true) ? 700 : 400, color: titleColor || '#ffffff' }}>
               {title || 'Título'}
             </h2>
             {subtitle && (
-              <p className="leading-relaxed mt-0.5" style={{ fontSize: subtitleSize ?? 13, fontWeight: (subtitleBold ?? false) ? 700 : 400, color: subtitleColor || '#a1a1aa' }}>
+              <p className="leading-relaxed mt-0.5" style={{ fontSize: `${subtitleSize ?? 13}px`, fontWeight: (subtitleBold ?? false) ? 700 : 400, color: subtitleColor || '#a1a1aa' }}>
                 {subtitle}
               </p>
             )}
@@ -197,7 +201,7 @@ export function AutoTemplate({ media, templateId, title, subtitle, category, log
         </div>
       </div>
 
-      <div className="flex-1 relative">
+      <div className="relative" style={{ height: `${mediaPct}%` }}>
         {filledSlots.map((slot) => (
           <div
             key={slot.id}
