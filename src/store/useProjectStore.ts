@@ -71,6 +71,17 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
           panY: 0,
           scale: 1,
         }
+        if (item.type === 'image') {
+          const img = new Image()
+          img.src = src
+          await new Promise<void>((resolve) => {
+            img.onload = () => {
+              item.naturalWidth = img.naturalWidth
+              item.naturalHeight = img.naturalHeight
+              resolve()
+            }
+          })
+        }
         if (item.type === 'video') {
           const video = document.createElement('video')
           video.src = src

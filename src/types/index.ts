@@ -16,6 +16,8 @@ export interface MediaItem {
   panX?: number
   panY?: number
   scale?: number
+  naturalWidth?: number
+  naturalHeight?: number
 }
 
 export interface Project {

@@ -118,10 +118,27 @@ export async function renderVideo(project, workDir) {
 
     const targetW = Math.round(sw * scale)
     const targetH = Math.round(sh * scale)
-    const cropX = Math.round(Math.max(0, (targetW - sw) / 2 - panX))
-    const cropY = Math.round(Math.max(0, (targetH - sh) / 2 - panY))
-    const cropW = Math.min(sw, targetW)
-    const cropH = Math.min(sh, targetH)
+
+    // compute actual dimensions after force_original_aspect_ratio=2 (cover mode)
+    const nw = media.naturalWidth
+    const nh = media.naturalHeight
+    let actualW = targetW
+    let actualH = targetH
+    if (nw && nh) {
+      const sar = nw / nh
+      const tar = targetW / targetH
+      if (sar > tar) {
+        actualW = Math.round(nw * (targetH / nh))
+        actualH = targetH
+      } else {
+        actualW = targetW
+        actualH = Math.round(nh * (targetW / nw))
+      }
+    }
+    const cropX = Math.round(Math.max(0, Math.min(actualW - sw, (actualW - sw) / 2 + panX)))
+    const cropY = Math.round(Math.max(0, Math.min(actualH - sh, (actualH - sh) / 2 + panY)))
+    const cropW = Math.min(sw, actualW)
+    const cropH = Math.min(sh, actualH)
 
     filterParts.push(
       `[${i}:v]${trim}${loop}${fpsFilter}scale=${targetW}:${targetH}:force_original_aspect_ratio=2,crop=${cropW}:${cropH}:${cropX}:${cropY},setpts=PTS-STARTPTS[${cropLabel}]`
@@ -219,7 +236,7 @@ export async function renderVideo(project, workDir) {
     await writeFile(subFile, wrapText(project.subtitle, textMaxW, subSize))
     filterParts.push(
       `[${lastLabel}]drawtext=textfile=${subFile}:` +
-      `x=${textX}:y=${textY}:fontsize=${subSize}:fontcolor=${project.subtitleColor || '#a1a1aa'}[sub]`
+      `x=${textX}:y=${textY}:fontsize=${subSize}:fontcolor=${project.subtitleColor || '#a1a1aa'}:fontfile=${fontFile}[sub]`
     )
     lastLabel = 'sub'
   }
