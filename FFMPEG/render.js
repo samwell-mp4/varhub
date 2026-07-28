@@ -149,7 +149,7 @@ export async function renderVideo(project, workDir) {
 
   if (project.category) {
     filterParts.push(
-      `[${lastLabel}]drawtext=text='${escapeText(project.category.toUpperCase())}':` +
+      `[${lastLabel}]drawtext=text=${escapeText(project.category.toUpperCase())}:` +
       `x=${textX}:y=${textY}:fontsize=18:fontcolor=#a78bfa:fontfile=${fontFile}[cat]`
     )
     lastLabel = 'cat'
@@ -160,7 +160,7 @@ export async function renderVideo(project, workDir) {
     const fontSize = (project.titleSize || 16) * 2.25
     const bold = project.titleBold !== false ? ':fontfile=' + fontFile : ''
     filterParts.push(
-      `[${lastLabel}]drawtext=text='${escapeText(project.title)}':` +
+      `[${lastLabel}]drawtext=text=${escapeText(project.title)}:` +
       `x=${textX}:y=${textY}:fontsize=${Math.round(fontSize)}:fontcolor=${project.titleColor || '#ffffff'}${bold}[title]`
     )
     lastLabel = 'title'
@@ -170,7 +170,7 @@ export async function renderVideo(project, workDir) {
   if (project.subtitle) {
     const subSize = (project.subtitleSize || 13) * 2.25
     filterParts.push(
-      `[${lastLabel}]drawtext=text='${escapeText(project.subtitle)}':` +
+      `[${lastLabel}]drawtext=text=${escapeText(project.subtitle)}:` +
       `x=${textX}:y=${textY}:fontsize=${Math.round(subSize)}:fontcolor=${project.subtitleColor || '#a1a1aa'}[sub]`
     )
     lastLabel = 'sub'
@@ -205,7 +205,8 @@ export async function renderVideo(project, workDir) {
 
 function escapeText(t) {
   return (t || '')
-    .replace(/'/g, "'\\\\\\''")
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
     .replace(/:/g, '\\:')
     .replace(/\[/g, '\\[')
     .replace(/\]/g, '\\]')
