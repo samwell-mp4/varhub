@@ -19,7 +19,11 @@ export async function serverExport(
   project: Project,
   onProgress?: (msg: string) => void
 ): Promise<Blob | null> {
-  const proj: Record<string, unknown> = JSON.parse(JSON.stringify(project))
+  const proj = JSON.parse(JSON.stringify(project)) as {
+    logo?: string
+    media?: { src?: string; type?: string; duration?: number; trim?: { start: number; end: number } }[]
+    title?: string
+  }
 
   if (proj.logo && !proj.logo.startsWith('data:')) {
     proj.logo = await toDataUrl(proj.logo).catch(() => undefined)
