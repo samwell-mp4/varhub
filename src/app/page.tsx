@@ -17,7 +17,9 @@ import { MobileStepBar } from '@/components/layout/MobileStepBar'
 import { MobileTemplatePicker } from '@/components/ui/MobileTemplatePicker'
 import { TEMPLATES } from '@/lib/autoLayout'
 import { exportProject } from '@/lib/export'
-import { Download, Loader2 } from 'lucide-react'
+import { serverExport } from '@/lib/serverExport'
+import { listVideos, getVideo, deleteVideo } from '@/lib/videoStore'
+import { Download, Loader2, History, Trash2 } from 'lucide-react'
 import { ExportFormat } from '@/types'
 
 export default function Home() {
@@ -37,7 +39,12 @@ export default function Home() {
   const [showFormatPicker, setShowFormatPicker] = useState(false)
   const [showDuration, setShowDuration] = useState(false)
   const [duration, setDuration] = useState(5)
-  const [pendingFormat, setPendingFormat] = useState<ExportFormat | null>(null)
+  const [showHistory, setShowHistory] = useState(false)
+  const [history, setHistory] = useState<{ id: string; title: string; date: string }[]>([])
+
+  useEffect(() => {
+    listVideos().then(setHistory).catch(() => {})
+  }, [])
 
   useEffect(() => {
     const check = () => {
@@ -77,6 +84,53 @@ export default function Home() {
       return
     }
 
+    if (format === 'mp4') {
+      const proj = JSON.parse(JSON.stringify(project))
+      const totalSec = (proj.media || []).reduce((sum: number, m: { type: string; duration?: number; trim?: { start: number; end: number } }) => {
+        if (m.type === 'image') return sum + 3
+        if (m.trim) return sum + (m.trim.end - m.trim.start)
+        return sum + (m.duration || 3)
+      }, 0)
+      const estSec = Math.max(totalSec, 3) * 2 + 5
+      // eslint-disable-next-line react-hooks/purity
+      const start = Date.now()
+      setExporting(true, 'Renderizando... 0%')
+      const timer = setInterval(() => {
+        const elapsed = (Date.now() - start) / 1000
+        const pct = Math.min(99, Math.round((elapsed / estSec) * 100))
+        setExporting(true, `Renderizando... ${pct}%`)
+      }, 1000)
+      try {
+        const blob = await serverExport(proj, (msg) => setExporting(true, msg))
+        if (!blob) return
+        clearInterval(timer)
+        setExporting(false)
+        // eslint-disable-next-line react-hooks/purity
+        const id = Math.random().toString(36).slice(2)
+        setHistory(h => [{ id, title: proj.title || 'Untitled', date: new Date().toISOString() }, ...h].slice(0, 20))
+        if (navigator.share && navigator.canShare) {
+          const file = new File([blob], 'video.mp4', { type: 'video/mp4' })
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file] }).catch(() => {})
+            return
+          }
+        }
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'video.mp4'
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        setTimeout(() => URL.revokeObjectURL(url), 60000)
+      } catch (e) {
+        console.error(e)
+      }
+      clearInterval(timer)
+      setExporting(false)
+      return
+    }
+
     setExporting(true, `Exportando ${format.toUpperCase()}...`)
     try {
       await exportProject(project, format, (msg) => setExporting(true, msg))
@@ -88,14 +142,52 @@ export default function Home() {
 
   const handleMobileExportWithDuration = async () => {
     setShowDuration(false)
-    const format = pendingFormat!
-    setPendingFormat(null)
-    setExporting(true, `Exportando ${format.toUpperCase()}...`)
+    const proj = JSON.parse(JSON.stringify(project))
+    for (const m of proj.media) {
+      if (m.type === 'image') {
+        m.duration = duration
+        m.trim = undefined
+      }
+    }
+    const totalSec = (proj.media || []).reduce((sum: number, m: { type: string; duration?: number; trim?: { start: number; end: number } }) => {
+      if (m.type === 'image') return sum + duration
+      if (m.trim) return sum + (m.trim.end - m.trim.start)
+      return sum + (m.duration || 3)
+    }, 0)
+    const estSec = Math.max(totalSec, 3) * 2 + 5
+    const start = Date.now()
+    setExporting(true, 'Renderizando... 0%')
+    const timer = setInterval(() => {
+      const elapsed = (Date.now() - start) / 1000
+      const pct = Math.min(99, Math.round((elapsed / estSec) * 100))
+      setExporting(true, `Renderizando... ${pct}%`)
+    }, 1000)
     try {
-      await exportProject(project, format, (msg) => setExporting(true, msg), duration)
+      const blob = await serverExport(proj, (msg) => setExporting(true, msg))
+      if (!blob) return
+      clearInterval(timer)
+      setExporting(false)
+      const id = Math.random().toString(36).slice(2)
+      setHistory(h => [{ id, title: proj.title || 'Untitled', date: new Date().toISOString() }, ...h].slice(0, 20))
+      if (navigator.share && navigator.canShare) {
+        const file = new File([blob], 'video.mp4', { type: 'video/mp4' })
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file] }).catch(() => {})
+          return
+        }
+      }
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'video.mp4'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      setTimeout(() => URL.revokeObjectURL(url), 60000)
     } catch (e) {
       console.error(e)
     }
+    clearInterval(timer)
     setExporting(false)
   }
 
@@ -145,6 +237,70 @@ export default function Home() {
                     Editar
                   </button>
                   <div className="w-px h-5 bg-[#1a1a28] mx-0.5" />
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowHistory(!showHistory)}
+                      className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-white/5 transition-all"
+                      title="Histórico"
+                    >
+                      <History size={14} />
+                    </button>
+                    {showHistory && (
+                      <div className="absolute right-0 top-full mt-1 w-64 bg-[#13131a] border border-[#1a1a28] rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
+                        <div className="flex items-center justify-between px-3 py-2 border-b border-[#1a1a28]">
+                          <span className="text-[10px] text-zinc-600 font-medium uppercase">Histórico</span>
+                          {history.length > 0 && (
+                            <button
+                              onClick={() => { import('@/lib/videoStore').then(m => m.clearVideos()); setHistory([]); setShowHistory(false) }}
+                              className="text-[10px] text-red-400 hover:text-red-300"
+                            >
+                              Limpar
+                            </button>
+                          )}
+                        </div>
+                        {history.length === 0 ? (
+                          <p className="text-xs text-zinc-600 text-center py-6">Nenhum vídeo exportado</p>
+                        ) : (
+                          history.map(entry => (
+                            <div key={entry.id} className="flex items-center gap-2 px-3 py-2.5 hover:bg-white/5 border-b border-[#1a1a28]/50 last:border-0">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs text-zinc-300 truncate">{entry.title}</p>
+                                <p className="text-[10px] text-zinc-600">{new Date(entry.date).toLocaleString('pt-BR')}</p>
+                              </div>
+                              <button
+                                onClick={async () => {
+                                  const blob = await getVideo(entry.id)
+                                  if (!blob) return
+                                  const url = URL.createObjectURL(blob)
+                                  const a = document.createElement('a')
+                                  a.href = url
+                                  a.download = 'video.mp4'
+                                  document.body.appendChild(a)
+                                  a.click()
+                                  document.body.removeChild(a)
+                                  setTimeout(() => URL.revokeObjectURL(url), 60000)
+                                }}
+                                className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-white/10"
+                                title="Baixar"
+                              >
+                                <Download size={12} />
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  await deleteVideo(entry.id)
+                                  setHistory(h => h.filter(x => x.id !== entry.id))
+                                }}
+                                className="p-1.5 rounded-md text-zinc-500 hover:text-red-400 hover:bg-white/10"
+                                title="Remover"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
                   <button
                     onClick={() => setShowFormatPicker(true)}
                     disabled={isExporting}

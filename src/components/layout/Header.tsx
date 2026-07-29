@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react'
 import { useProjectStore, useUIStore } from '@/store'
 import { Download, PanelLeftClose, PanelLeft, Save, FolderOpen, Loader2, Clock, History, Trash2 } from 'lucide-react'
 import { exportProject } from '@/lib/export'
+import { serverExport } from '@/lib/serverExport'
 import { saveProjectToFile, loadProjectFromFile } from '@/lib/projectFile'
-import { saveVideo, listVideos, getVideo, deleteVideo, clearVideos } from '@/lib/videoStore'
+import { listVideos, getVideo, deleteVideo, clearVideos } from '@/lib/videoStore'
 import { motion, AnimatePresence } from 'framer-motion'
 
 type HistoryEntry = { id: string; title: string; date: string }
@@ -15,7 +16,6 @@ export function Header() {
   const { isSidebarOpen, toggleSidebar, isExporting, setExporting } = useUIStore()
   const [showDuration, setShowDuration] = useState(false)
   const [duration, setDuration] = useState(5)
-  const [pendingFormat, setPendingFormat] = useState<'png' | 'jpg' | 'mp4' | null>(null)
   const [showHistory, setShowHistory] = useState(false)
   const [history, setHistory] = useState<HistoryEntry[]>([])
 
@@ -23,75 +23,38 @@ export function Header() {
     listVideos().then(setHistory).catch(() => {})
   }, [])
 
-  const serverExport = async (imageDuration?: number) => {
-    const totalSec = (project.media || []).reduce((sum, m) => {
+  const doServerExport = async (imageDuration?: number) => {
+    const proj = JSON.parse(JSON.stringify(project))
+    if (imageDuration) {
+      for (const m of proj.media) {
+        if (m.type === 'image') {
+          m.duration = imageDuration
+          m.trim = undefined
+        }
+      }
+    }
+
+    const totalSec = (proj.media || []).reduce((sum: number, m: { type: string; duration?: number; trim?: { start: number; end: number } }) => {
       if (m.type === 'image') return sum + (imageDuration || 3)
       if (m.trim) return sum + (m.trim.end - m.trim.start)
       return sum + (m.duration || 3)
     }, 0)
     const estSec = Math.max(totalSec, 3) * 2 + 5
     const start = Date.now()
-    let timer: ReturnType<typeof setInterval> | null = null
 
-    const updateProgress = () => {
+    setExporting(true, 'Renderizando... 0%')
+    const timer = setInterval(() => {
       const elapsed = (Date.now() - start) / 1000
       const pct = Math.min(99, Math.round((elapsed / estSec) * 100))
       setExporting(true, `Renderizando... ${pct}%`)
-    }
+    }, 1000)
 
-    setExporting(true, 'Renderizando... 0%')
-    timer = setInterval(updateProgress, 1000)
     try {
-      const proj: Record<string, any> = JSON.parse(JSON.stringify(project))
-      if (imageDuration) {
-        for (const m of proj.media) {
-          if (m.type === 'image') {
-            m.duration = imageDuration
-            m.trim = undefined
-          }
-        }
-      }
-
-      const toDataUrl = async (src: string): Promise<string | undefined> => {
-        if (src.startsWith('data:')) return src
-        try {
-          const res = await fetch(src)
-          const blob = await res.blob()
-          return new Promise((resolve, reject) => {
-            const r = new FileReader()
-            r.onload = () => resolve(r.result as string)
-            r.onerror = reject
-            r.readAsDataURL(blob)
-          })
-        } catch { return undefined }
-      }
-
-      if (proj.logo && !proj.logo.startsWith('data:')) {
-        proj.logo = await toDataUrl(proj.logo).catch(() => undefined)
-      }
-      for (const m of proj.media || []) {
-        if (m.src && !m.src.startsWith('data:')) {
-          m.src = await toDataUrl(m.src).catch(() => m.src)
-        }
-      }
-
-      const rendererUrl = process.env.NEXT_PUBLIC_RENDERER_URL || 'https://var-hub-ffmpeg.hx8235.easypanel.host'
-      const renderSecret = process.env.NEXT_PUBLIC_RENDER_SECRET || 'changeme'
-      const res = await fetch(`${rendererUrl}/render`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-secret': renderSecret },
-        body: JSON.stringify({ project: proj }),
-        signal: AbortSignal.timeout(60000),
-      })
-      if (!res.ok) {
-        const txt = await res.text().catch(() => '')
-        throw new Error(`renderer ${res.status}: ${txt.slice(0, 20000)}`)
-      }
-      const blob = await res.blob()
-      if (timer) clearInterval(timer)
+      const blob = await serverExport(proj, (msg) => setExporting(true, msg))
+      if (!blob) return
+      clearInterval(timer)
       setExporting(false)
       const id = Math.random().toString(36).slice(2)
-      saveVideo(id, blob, proj.title || 'Untitled').catch(() => {})
       const entry: HistoryEntry = { id, title: proj.title || 'Untitled', date: new Date().toISOString() }
       setHistory(h => [entry, ...h.filter(x => x.id !== id)].slice(0, 20))
       if (navigator.share && navigator.canShare) {
@@ -112,7 +75,7 @@ export function Header() {
     } catch (e) {
       console.error(e)
     }
-    if (timer) clearInterval(timer)
+    clearInterval(timer)
     setExporting(false)
   }
 
@@ -122,11 +85,10 @@ export function Header() {
     if (format === 'mp4') {
       const hasOnlyImages = project.media.length > 0 && project.media.every(m => m.type === 'image')
       if (hasOnlyImages) {
-        setPendingFormat(format)
         setShowDuration(true)
         return
       }
-      await serverExport()
+      await doServerExport()
       return
     }
 
@@ -141,9 +103,7 @@ export function Header() {
 
   const handleExportWithDuration = async () => {
     setShowDuration(false)
-    const format = pendingFormat!
-    setPendingFormat(null)
-    await serverExport(duration)
+    await doServerExport(duration)
   }
 
   const handleSave = () => {
