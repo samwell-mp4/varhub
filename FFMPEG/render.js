@@ -165,7 +165,7 @@ export async function renderVideo(project, workDir) {
     }
     const loopedLabel = media.type === 'video' && media.trim ? `${cropLabel}_l` : cropLabel
 
-    filterParts.push(`[${lastLabel}][${loopedLabel}]overlay=${sx}:${sy}:shortest=1[${outLabel}]`)
+    filterParts.push(`[${lastLabel}][${loopedLabel}]overlay=${sx}:${sy}[${outLabel}]`)
     lastLabel = outLabel
   }
 
