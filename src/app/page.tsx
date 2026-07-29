@@ -79,7 +79,6 @@ export default function Home() {
 
     const hasOnlyImages = project.media.length > 0 && project.media.every(m => m.type === 'image')
     if (format === 'mp4' && hasOnlyImages) {
-      setPendingFormat(format)
       setShowDuration(true)
       return
     }
