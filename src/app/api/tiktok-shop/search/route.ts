@@ -194,11 +194,15 @@ function parseHtmlProducts(html: string): TiktokProduct[] {
 
 export async function POST(request: Request) {
   try {
-    const { query } = await request.json()
+    const { query, category } = await request.json()
     if (!query || typeof query !== 'string' || !query.trim()) {
       return NextResponse.json({ error: 'Digite um termo para buscar' }, { status: 400 })
     }
-    const q = query.trim()
+    let q = query.trim()
+    if (category && typeof category === 'string' && category.trim()) {
+      const catSlug = category.trim()
+      q = `${q} ${catSlug.replace(/[^a-zA-Z0-9-]/g, ' ')}`
+    }
 
     let products = await tryDirectApi(q)
     if (!products) products = await tryProxy(q)
