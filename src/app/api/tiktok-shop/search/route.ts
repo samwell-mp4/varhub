@@ -1,88 +1,211 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server'
 
-const MOCK_PRODUCTS: Record<string, { id: string; title: string; image: string; price: number; sales: number; seller: string; commission: number; rating: number; gmv: number }[]> = {
-  'beleza': [
-    { id: 'tt001', title: 'Escova Secadora Modeladora 3 em 1', image: 'https://picsum.photos/seed/brush/400/500', price: 89.90, sales: 15230, seller: 'BelezaStore', commission: 15, rating: 4.7, gmv: 1368917 },
-    { id: 'tt002', title: 'Kit Maquiagem Profissional 12 Cores', image: 'https://picsum.photos/seed/makeup/400/500', price: 49.90, sales: 23450, seller: 'GlamourShop', commission: 12, rating: 4.5, gmv: 1170155 },
-    { id: 'tt003', title: 'Cremes para Pentear sem Enxágue', image: 'https://picsum.photos/seed/cream/400/500', price: 19.90, sales: 45210, seller: 'CapilarPro', commission: 10, rating: 4.3, gmv: 899679 },
-    { id: 'tt004', title: 'Máscara de Cílios Alongadora', image: 'https://picsum.photos/seed/mascara/400/500', price: 34.90, sales: 18200, seller: 'BelezaTotal', commission: 18, rating: 4.6, gmv: 635180 },
-  ],
-  'fitness': [
-    { id: 'tt101', title: 'Garrafa Térmica 2L Inox', image: 'https://picsum.photos/seed/bottle/400/500', price: 59.90, sales: 32100, seller: 'FitLife', commission: 12, rating: 4.8, gmv: 1922790 },
-    { id: 'tt102', title: 'Tapete Yoga Antiderrapante', image: 'https://picsum.photos/seed/mat/400/500', price: 79.90, sales: 18450, seller: 'YogaPlus', commission: 10, rating: 4.4, gmv: 1474155 },
-    { id: 'tt103', title: 'Corda Pular Speed Aço', image: 'https://picsum.photos/seed/rope/400/500', price: 29.90, sales: 25600, seller: 'EsportesBR', commission: 15, rating: 4.6, gmv: 765440 },
-    { id: 'tt104', title: 'Kit Elásticos Resistência 5 níveis', image: 'https://picsum.photos/seed/bands/400/500', price: 39.90, sales: 19800, seller: 'StrongFit', commission: 8, rating: 4.2, gmv: 790020 },
-  ],
-  'cozinha': [
-    { id: 'tt201', title: 'Panela Elétrica Multifuncional', image: 'https://picsum.photos/seed/pot/400/500', price: 149.90, sales: 12300, seller: 'CozinhaFácil', commission: 8, rating: 4.5, gmv: 1843770 },
-    { id: 'tt202', title: 'Faqueiro 24 Peças Inox', image: 'https://picsum.photos/seed/silverware/400/500', price: 69.90, sales: 21500, seller: 'MesaRica', commission: 10, rating: 4.3, gmv: 1502850 },
-    { id: 'tt203', title: 'Processador Elétrico 3 em 1', image: 'https://picsum.photos/seed/processor/400/500', price: 99.90, sales: 9800, seller: 'EletroPopular', commission: 12, rating: 4.1, gmv: 979020 },
-    { id: 'tt204', title: 'Jogo de Panelas Antiaderente 5 Peças', image: 'https://picsum.photos/seed/pans/400/500', price: 199.90, sales: 7600, seller: 'CozinhaLuxo', commission: 7, rating: 4.6, gmv: 1519240 },
-  ],
-  'pet': [
-    { id: 'tt301', title: 'Ração Premium Cães 15kg', image: 'https://picsum.photos/seed/dogfood/400/500', price: 129.90, sales: 28900, seller: 'PetFeliz', commission: 5, rating: 4.7, gmv: 3754110 },
-    { id: 'tt302', title: 'Cama Ortopédica Cães 70cm', image: 'https://picsum.photos/seed/dogbed/400/500', price: 89.90, sales: 14200, seller: 'PetConforto', commission: 10, rating: 4.4, gmv: 1276580 },
-    { id: 'tt303', title: 'Brinquedo Interativo Cães', image: 'https://picsum.photos/seed/toy/400/500', price: 24.90, sales: 36500, seller: 'PetDiversão', commission: 15, rating: 4.2, gmv: 908850 },
-    { id: 'tt304', title: 'Comedouro Automático Programável', image: 'https://picsum.photos/seed/feeder/400/500', price: 159.90, sales: 6700, seller: 'PetTech', commission: 8, rating: 4.5, gmv: 1071330 },
-  ],
-  'casa': [
-    { id: 'tt401', title: 'Luminária LED Mesa Decorativa', image: 'https://picsum.photos/seed/lamp/400/500', price: 45.90, sales: 19800, seller: 'CasaBela', commission: 12, rating: 4.3, gmv: 908820 },
-    { id: 'tt402', title: 'Kit Organizador Gavetas 10 Peças', image: 'https://picsum.photos/seed/organizer/400/500', price: 29.90, sales: 31200, seller: 'OrganizeJá', commission: 15, rating: 4.1, gmv: 932880 },
-    { id: 'tt403', title: 'Aspirador Robô Inteligente', image: 'https://picsum.photos/seed/robot/400/500', price: 899.90, sales: 4300, seller: 'CasaInteligente', commission: 6, rating: 4.4, gmv: 3869570 },
-    { id: 'tt404', title: 'Kit Panelas Pedra Sabão', image: 'https://picsum.photos/seed/stone/400/500', price: 249.90, sales: 5600, seller: 'ArtesanalCasa', commission: 10, rating: 4.7, gmv: 1399440 },
-  ],
-  'celular': [
-    { id: 'tt501', title: 'Suporte Veicular Magnético 360°', image: 'https://picsum.photos/seed/mount/400/500', price: 19.90, sales: 45200, seller: 'TechAcessórios', commission: 20, rating: 4.5, gmv: 899480 },
-    { id: 'tt502', title: 'Fone Bluetooth 5.3 Cancelamento', image: 'https://picsum.photos/seed/earbuds/400/500', price: 79.90, sales: 28700, seller: 'SomPremium', commission: 12, rating: 4.6, gmv: 2293130 },
-    { id: 'tt503', title: 'Kit Carregador Rápido 65W', image: 'https://picsum.photos/seed/charger/400/500', price: 49.90, sales: 19850, seller: 'PowerTech', commission: 15, rating: 4.3, gmv: 990515 },
-    { id: 'tt504', title: 'Película Privacidade iPhone', image: 'https://picsum.photos/seed/screen/400/500', price: 29.90, sales: 32100, seller: 'TelaPro', commission: 18, rating: 4.1, gmv: 959790 },
-  ],
-  'moda': [
-    { id: 'tt601', title: 'Cinto Ajustável Couro Legítimo', image: 'https://picsum.photos/seed/belt/400/500', price: 39.90, sales: 25400, seller: 'ModaMasculina', commission: 15, rating: 4.4, gmv: 1013460 },
-    { id: 'tt602', title: 'Bolsa Feminina Couro Ecológico', image: 'https://picsum.photos/seed/bag/400/500', price: 89.90, sales: 16700, seller: 'EstiloFeminino', commission: 12, rating: 4.6, gmv: 1501330 },
-    { id: 'tt603', title: 'Kit Meias Algodão 6 Pares', image: 'https://picsum.photos/seed/socks/400/500', price: 19.90, sales: 52300, seller: 'VestuarioBR', commission: 20, rating: 4.2, gmv: 1040770 },
-    { id: 'tt604', title: 'Tênis Casual Respirável', image: 'https://picsum.photos/seed/shoes/400/500', price: 129.90, sales: 12300, seller: 'ConfortoTotal', commission: 10, rating: 4.3, gmv: 1597770 },
-  ],
+interface TiktokProduct {
+  id: string
+  title: string
+  image: string
+  price: number
+  sales: number
+  seller: string
+  commission?: number
+  rating?: number
+  gmv?: number
 }
 
-function findRelevantProducts(query: string) {
-  const q = query.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-  const results: typeof MOCK_PRODUCTS['beleza'] = []
+const HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36',
+  'Accept': 'application/json, text/plain, */*',
+  'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
+  'Origin': 'https://shop.tiktok.com',
+  'Referer': 'https://shop.tiktok.com/',
+}
 
-  for (const [category, products] of Object.entries(MOCK_PRODUCTS)) {
-    if (q.includes(category) || category.includes(q)) {
-      results.push(...products)
-    }
+const CORS_PROXY = 'https://api.allorigins.win/raw?url='
+
+function extractNumber(v: any): number {
+  if (typeof v === 'number') return v
+  if (typeof v === 'string') {
+    const n = parseFloat(v.replace(/[^0-9.,]/g, '').replace('.', '').replace(',', '.'))
+    return isNaN(n) ? 0 : n
+  }
+  return 0
+}
+
+async function tryDirectApi(query: string): Promise<TiktokProduct[] | null> {
+  const urls = [
+    `https://shop.tiktok.com/api/product/search?keyword=${encodeURIComponent(query)}&page=1&page_size=12&sort_type=0`,
+    `https://shop.tiktok.com/api/v2/search?keyword=${encodeURIComponent(query)}&page=1&page_size=12`,
+    `https://www.tiktok.com/api/search/general/full/?keyword=${encodeURIComponent(query)}&aid=1988`,
+  ]
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, {
+        headers: { ...HEADERS, 'Accept': 'application/json' },
+        signal: AbortSignal.timeout(8000),
+      })
+      if (!res.ok) continue
+      const text = await res.text()
+      let data: any
+      try { data = JSON.parse(text) } catch { continue }
+      const products = extractProducts(data)
+      if (products.length > 0) return products
+    } catch {}
+  }
+  return null
+}
+
+function extractProducts(data: any): TiktokProduct[] {
+  const products: TiktokProduct[] = []
+
+  const items = data?.data?.products || data?.products || data?.data?.items || data?.itemList || data?.items || []
+
+  for (const item of items) {
+    const p = item?.product || item
+    const title = p?.title || p?.product_name || p?.name || ''
+    if (!title) continue
+
+    const image = p?.image || p?.thumbnail || p?.main_image || p?.images?.[0] || p?.cover || ''
+
+    const rawPrice = p?.price || p?.price_text || p?.sale_price || p?.min_price || 0
+    const price = extractNumber(rawPrice)
+
+    const rawSales = p?.sales || p?.sold || p?.sold_count || p?.sales_count || p?.order_count || 0
+    const sales = extractNumber(rawSales)
+
+    const seller = p?.shop_name || p?.seller_name || p?.shop?.name || p?.author?.nickname || p?.nickname || p?.seller || 'TikTok Shop'
+
+    const rawCommission = p?.commission || p?.commission_rate || item?.commission || 0
+    const commission = extractNumber(rawCommission) || undefined
+
+    const rating = p?.rating || p?.score || item?.rating || undefined
+
+    const rawGmv = p?.gmv || p?.gmv_text || p?.revenue || p?.sales_amount || 0
+    const gmv = extractNumber(rawGmv) || undefined
+
+    const id = p?.id || p?.product_id || p?.item_id || String(Math.random()).slice(2)
+
+    products.push({
+      id: String(id),
+      title: String(title).trim(),
+      image: String(image).startsWith('http') ? String(image) : '',
+      price,
+      sales,
+      seller: String(seller).trim(),
+      commission: commission && commission > 0 ? commission : undefined,
+      rating: rating ? extractNumber(rating) : undefined,
+      gmv: gmv && gmv > 0 ? gmv : undefined,
+    })
   }
 
-  for (const products of Object.values(MOCK_PRODUCTS)) {
-    for (const p of products) {
-      const title = p.title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      const seller = p.seller.toLowerCase()
-      if ((title.includes(q) || seller.includes(q)) && !results.some(r => r.id === p.id)) {
-        results.push(p)
+  return products
+}
+
+async function tryProxy(query: string): Promise<TiktokProduct[] | null> {
+  const urls = [
+    `https://shop.tiktok.com/search?keyword=${encodeURIComponent(query)}`,
+    `https://www.tiktok.com/search?q=${encodeURIComponent(query)}&type=product`,
+    `https://tikrank.com/shop?keyword=${encodeURIComponent(query)}`,
+  ]
+  for (const url of urls) {
+    try {
+      const res = await fetch(CORS_PROXY + encodeURIComponent(url), {
+        signal: AbortSignal.timeout(10000),
+      })
+      if (!res.ok) continue
+      const html = await res.text()
+
+      const products = parseHtmlProducts(html)
+      if (products.length > 0) return products
+    } catch {}
+  }
+  return null
+}
+
+function parseHtmlProducts(html: string): TiktokProduct[] {
+  const products: TiktokProduct[] = []
+
+  const initialStateMatch = html.match(/window\.__INITIAL_STATE__\s*=\s*({.*?});/)
+  if (initialStateMatch) {
+    try {
+      const state = JSON.parse(initialStateMatch[1])
+      const items = state?.search?.products || state?.searchResult?.productList || state?.productList || []
+      for (const item of items) {
+        const p = item?.product || item
+        products.push({
+          id: String(p?.id || p?.productId || Math.random()).slice(0, 12),
+          title: String(p?.title || p?.productName || '').trim(),
+          image: String(p?.image || p?.thumbnail || p?.mainImage || ''),
+          price: extractNumber(p?.price || p?.salePrice || p?.minPrice || 0),
+          sales: extractNumber(p?.sales || p?.soldCount || p?.salesCount || 0),
+          seller: String(p?.shopName || p?.sellerName || p?.shop?.name || 'TikTok Shop').trim(),
+          commission: p?.commission ? extractNumber(p.commission) : undefined,
+          rating: p?.rating ? extractNumber(p.rating) : undefined,
+          gmv: p?.gmv || p?.revenue ? extractNumber(p.gmv || p.revenue) : undefined,
+        })
       }
+      if (products.length > 0) return products
+    } catch {}
+  }
+
+  const jsonLdBlocks = html.match(/<script[^>]*type="application\/ld\+json"[^>]*>(.*?)<\/script>/gs)
+  if (jsonLdBlocks) {
+    for (const block of jsonLdBlocks) {
+      try {
+        const json = JSON.parse(block.replace(/<[^>]+>/g, ''))
+        const items = Array.isArray(json) ? json : json?.itemListElement ? json.itemListElement.map((e: any) => e.item) : [json]
+        for (const item of items) {
+          if (item?.['@type'] === 'Product' || item?.name) {
+            products.push({
+              id: String(item?.sku || item?.productID || Math.random()).slice(0, 12),
+              title: String(item?.name || '').trim(),
+              image: String(item?.image?.[0] || item?.image || ''),
+              price: extractNumber(item?.offers?.price || item?.price || 0),
+              sales: 0,
+              seller: String(item?.brand?.name || item?.seller || 'TikTok Shop').trim(),
+              rating: item?.aggregateRating?.ratingValue ? extractNumber(item.aggregateRating.ratingValue) : undefined,
+            })
+          }
+        }
+        if (products.length > 0) return products
+      } catch {}
     }
   }
 
-  if (results.length === 0) {
-    const allProducts = Object.values(MOCK_PRODUCTS).flat()
-    const shuffled = [...allProducts].sort(() => Math.random() - 0.5)
-    results.push(...shuffled.slice(0, 8))
+  const cards = html.match(/<div[^>]*class="[^"]*product[^"]*"[^>]*>/gi)
+  if (cards && cards.length > 0) {
+    const nameMatches = html.match(/<h[23][^>]*class="[^"]*name[^"]*"[^>]*>([^<]+)<\/h[23]>/gi)
+    const priceMatches = html.match(/<span[^>]*class="[^"]*price[^"]*"[^>]*>R?\$?\s?([\d.,]+)<\/span>/gi)
+    for (let i = 0; i < Math.min(cards.length, 12); i++) {
+      products.push({
+        id: `card_${i}`,
+        title: nameMatches?.[i] ? nameMatches[i].replace(/<[^>]+>/g, '').trim() : `Produto ${i + 1}`,
+        image: '',
+        price: priceMatches?.[i] ? extractNumber(priceMatches[i]) : 0,
+        sales: 0,
+        seller: 'TikTok Shop',
+      })
+    }
+    if (products.length > 0) return products
   }
 
-  return results.slice(0, 8)
+  return products
 }
 
 export async function POST(request: Request) {
   try {
     const { query } = await request.json()
-    if (!query || typeof query !== 'string') {
-      return NextResponse.json({ error: 'Query é obrigatória' }, { status: 400 })
+    if (!query || typeof query !== 'string' || !query.trim()) {
+      return NextResponse.json({ error: 'Digite um termo para buscar' }, { status: 400 })
     }
-    const products = findRelevantProducts(query)
+    const q = query.trim()
+
+    let products = await tryDirectApi(q)
+    if (!products) products = await tryProxy(q)
+    if (!products) products = []
+
     return NextResponse.json({ products })
-  } catch {
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+  } catch (e) {
+    return NextResponse.json({ error: 'Erro ao buscar produtos: ' + (e instanceof Error ? e.message : 'desconhecido') }, { status: 500 })
   }
 }
