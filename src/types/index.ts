@@ -58,7 +58,7 @@ export interface TemplateSlot {
 
 export type ExportFormat = 'png' | 'jpg' | 'mp4'
 
-export type TabId = 'templates' | 'projetos' | 'upload' | 'configuracoes' | 'notificacoes' | 'ferramentas' | 'tiktok-shop'
+export type TabId = 'templates' | 'projetos' | 'upload' | 'configuracoes' | 'notificacoes' | 'ferramentas' | 'tiktok-shop' | 'extrator-audio'
 
 export interface InstagramPost {
   id: string

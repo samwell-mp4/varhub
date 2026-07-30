@@ -11,6 +11,7 @@ import {
   Bell,
   Wrench,
   ShoppingBag,
+  Music,
 } from 'lucide-react'
 
 const tabs: { id: TabId; label: string; icon: typeof LayoutTemplate }[] = [
@@ -18,6 +19,7 @@ const tabs: { id: TabId; label: string; icon: typeof LayoutTemplate }[] = [
   { id: 'templates', label: 'Templates', icon: LayoutTemplate },
   { id: 'projetos', label: 'Projetos', icon: FolderOpen },
   { id: 'ferramentas', label: 'Ferramentas', icon: Wrench },
+  { id: 'extrator-audio', label: 'Extrator Áudio', icon: Music },
   { id: 'tiktok-shop', label: 'TikTok Shop', icon: ShoppingBag },
   { id: 'notificacoes', label: 'Notificações', icon: Bell },
   { id: 'configuracoes', label: 'Configurações', icon: Settings },

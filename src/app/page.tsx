@@ -11,6 +11,7 @@ import { SettingsPanel } from '@/components/ui/SettingsPanel'
 import { NotificationsPanel } from '@/components/ui/NotificationsPanel'
 import { FerramentasPanel } from '@/components/ui/FerramentasPanel'
 import { TiktokShopPanel } from '@/components/ui/TiktokShopPanel'
+import { AudioExtractorPanel } from '@/components/ui/AudioExtractorPanel'
 import { useUIStore, useProjectStore } from '@/store'
 import { ExportOverlay } from '@/components/ui/ExportOverlay'
 import { MobileNav } from '@/components/layout/MobileNav'
@@ -326,8 +327,9 @@ export default function Home() {
                     {activeTab === 'projetos' && <ProjectsPanel />}
                     {activeTab === 'notificacoes' && <NotificationsPanel />}
           {activeTab === 'ferramentas' && <FerramentasPanel />}
-          {activeTab === 'tiktok-shop' && <TiktokShopPanel />}
                     {activeTab === 'tiktok-shop' && <TiktokShopPanel />}
+                    {activeTab === 'tiktok-shop' && <TiktokShopPanel />}
+                    {activeTab === 'extrator-audio' && <AudioExtractorPanel />}
                     {activeTab === 'configuracoes' && <SettingsPanel />}
                     {activeTab === 'upload' && project.media.length === 0 && (
                       <div className="p-4 text-center">
@@ -432,6 +434,8 @@ export default function Home() {
           {activeTab === 'projetos' && <ProjectsPanel />}
           {activeTab === 'notificacoes' && <NotificationsPanel />}
           {activeTab === 'ferramentas' && <FerramentasPanel />}
+          {activeTab === 'extrator-audio' && <AudioExtractorPanel />}
+          {activeTab === 'tiktok-shop' && <TiktokShopPanel />}
           {activeTab === 'configuracoes' && <SettingsPanel />}
         </main>
       </div>
