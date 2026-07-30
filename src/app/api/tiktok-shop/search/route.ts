@@ -148,7 +148,7 @@ function parseHtmlProducts(html: string): TiktokProduct[] {
     } catch {}
   }
 
-  const jsonLdBlocks = html.match(/<script[^>]*type="application\/ld\+json"[^>]*>(.*?)<\/script>/gs)
+  const jsonLdBlocks = html.match(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)
   if (jsonLdBlocks) {
     for (const block of jsonLdBlocks) {
       try {
